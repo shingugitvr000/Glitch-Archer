@@ -73,3 +73,10 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# VRM 반드시 포함되어야 할 것
+!*.meta
+!Assets/**/*.shader
+!Assets/**/*.mat
+!Assets/**/*.prefab
+!Assets/**/*.vrm

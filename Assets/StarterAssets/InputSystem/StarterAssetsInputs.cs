@@ -22,8 +22,16 @@ namespace StarterAssets
 		public bool cursorLocked = true;
 		public bool cursorInputForLook = true;
 
+        [Header("Dodge")]
+        public bool dodgeForward;
+        public bool dodgeBackward;
+
+       
+
+        
+
 #if ENABLE_INPUT_SYSTEM
-		public void OnMove(InputValue value)
+        public void OnMove(InputValue value)
 		{
 			MoveInput(value.Get<Vector2>());
 		}
@@ -54,6 +62,17 @@ namespace StarterAssets
         public void OnShoot(InputValue value)
         {
             ShootInput(value.isPressed);
+        }
+
+        // 입력 처리 메서드
+        public void OnSlide(InputValue value)
+        {
+            DodgeForwardInput(value.isPressed);
+        }
+
+        public void OnDodge(InputValue value)
+        {
+            DodgeBackwardInput(value.isPressed);
         }
 #endif
 
@@ -86,6 +105,16 @@ namespace StarterAssets
         public void ShootInput(bool newShootState)
         {
             shoot = newShootState;
+        }
+
+        public void DodgeForwardInput(bool newDodgeForwardState)
+        {
+            dodgeForward = newDodgeForwardState;
+        }
+
+        public void DodgeBackwardInput(bool newDodgeBackwardState)
+        {
+            dodgeBackward = newDodgeBackwardState;
         }
 
         private void OnApplicationFocus(bool hasFocus)

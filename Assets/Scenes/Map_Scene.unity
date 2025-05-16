@@ -26923,6 +26923,7 @@ MonoBehaviour:
   arrowProjectile: {fileID: 7635336132027265375, guid: 873a0076f180db2408c2932ee18f8dd3,
     type: 3}
   spawnArrowPosition: {fileID: 536307659}
+  arrowSpawnDelay: 0.33
 --- !u!1 &1855381529 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7220124231782820268, guid: 824ac94b09deb834f916f957a7fca4ee,

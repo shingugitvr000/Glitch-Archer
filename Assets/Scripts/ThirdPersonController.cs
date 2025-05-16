@@ -112,6 +112,14 @@ namespace StarterAssets
 
         private bool _hasAnimator;
 
+        private bool _canMove = true; // 이동 가능 여부
+
+        // 이동 가능 여부 설정 메서드
+        public void SetCanMove(bool canMove)
+        {
+            _canMove = canMove;
+        }
+
         private bool IsCurrentDeviceMouse
         {
             get
@@ -212,6 +220,9 @@ namespace StarterAssets
 
         private void Move()
         {
+            // 이동 불가능한 경우 리턴
+            if (!_canMove) return;
+
             // set target speed based on move speed, sprint speed and if sprint is pressed
             float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
 

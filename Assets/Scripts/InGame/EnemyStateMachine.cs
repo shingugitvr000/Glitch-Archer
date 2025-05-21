@@ -17,6 +17,7 @@ public class EnemyStateMachine
     private float detectionRange;
     private float attackRange;
     private float moveSpeed;
+    private BaseEnemy baseEnemy;
 
     // 생성자를 통해 필요한 정보 주입
     public EnemyStateMachine(
@@ -41,6 +42,11 @@ public class EnemyStateMachine
 
         // 초기 상태 설정
         CurrentState = EnemyState.Idle;
+    }
+
+    public EnemyStateMachine(BaseEnemy baseEnemy)
+    {
+        this.baseEnemy = baseEnemy;
     }
 
     // 상태 변경 메서드

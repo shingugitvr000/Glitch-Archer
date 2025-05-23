@@ -17679,6 +17679,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: AvatarSample_K
       objectReference: {fileID: 0}
+    - target: {fileID: -1728013695380148634, guid: 8baaad104b5dcde48b75c24f26bc8262,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2953604236389334553, guid: 8baaad104b5dcde48b75c24f26bc8262,
         type: 3}
       propertyPath: m_DirtyAABB
@@ -26920,10 +26925,18 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   debugTransform: {fileID: 530219597}
-  arrowProjectile: {fileID: 7635336132027265375, guid: 873a0076f180db2408c2932ee18f8dd3,
+  arrowProjectile: {fileID: 4306192324490374450, guid: cf56cc48c3e51ec46ac5246b35cd0329,
     type: 3}
   spawnArrowPosition: {fileID: 536307659}
   arrowSpawnDelay: 0.33
+  dodgeCooldown: 0.7
+  dodgeDuration: 0.5
+  dodgeSpeed: 10
+  dodgeSpeedMultiplier: 1.5
+  isDodging: 0
+  dodgeTimer: 0
+  dodgeCooldownTimer: 0
+  dodgeDirection: {x: 0, y: 0, z: 0}
 --- !u!1 &1855381529 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7220124231782820268, guid: 824ac94b09deb834f916f957a7fca4ee,

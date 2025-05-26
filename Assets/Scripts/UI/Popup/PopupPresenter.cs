@@ -55,8 +55,9 @@ public class PopupPresenter
     {
         view.SetTitle(model.Title);
         view.SetMessage(model.Message);
-        view.SetConfirmButtonVisible(model.HasConfirmButton);
-        view.SetCancelButtonVisible(model.HasCancelButton);
+        //view.SetConfirmButtonVisible(model.HasConfirmButton);
+        //view.SetCancelButtonVisible(model.HasCancelButton);
+        view.SetButtonsVisible(model.HasConfirmButton, model.HasCancelButton);
     }
 
     // 이벤트 핸들러

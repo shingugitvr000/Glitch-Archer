@@ -15,6 +15,8 @@ public interface IPopupView
     void SetConfirmButtonVisible(bool isVisible);
     void SetCancelButtonVisible(bool isVisible);
 
+    void SetButtonsVisible(bool confirmIsVisible, bool cancleIsVisible);
+
     // 이벤트 - UI에서 발생하는 액션
     event Action OnConfirmClicked;
     event Action OnCancelClicked;

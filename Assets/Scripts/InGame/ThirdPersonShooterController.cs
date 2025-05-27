@@ -110,16 +110,16 @@ public class ThirdPersonShooterController : MonoBehaviour
         int currentShootValue = animator.GetInteger(ShootParam);
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(1);
 
-        // 애니메이션 상태 디버깅
-        if (Time.frameCount % 30 == 0) // 30프레임마다 로그 출력 (콘솔 범람 방지)
-        {
-            Debug.Log($"프레임: {Time.frameCount}, Shoot 값: {currentShootValue}, " +
-                      $"애니메이션 상태: {stateInfo.shortNameHash}, " +
-                      $"시간: {stateInfo.normalizedTime:F2}, " +
-                      $"isShootingRequested: {isShootingRequested}, " +
-                      $"isShootAnimationActive: {isShootAnimationActive}, " +
-                      $"쿨다운: {shootAnimationCooldown:F2}");
-        }
+        //// 애니메이션 상태 디버깅
+        //if (Time.frameCount % 30 == 0) // 30프레임마다 로그 출력 (콘솔 범람 방지)
+        //{
+        //    Debug.Log($"프레임: {Time.frameCount}, Shoot 값: {currentShootValue}, " +
+        //              $"애니메이션 상태: {stateInfo.shortNameHash}, " +
+        //              $"시간: {stateInfo.normalizedTime:F2}, " +
+        //              $"isShootingRequested: {isShootingRequested}, " +
+        //              $"isShootAnimationActive: {isShootAnimationActive}, " +
+        //              $"쿨다운: {shootAnimationCooldown:F2}");
+        //}
 
         // 발사 애니메이션 상태 추적
         if (stateInfo.IsName("Attack_1Shoot_Loop"))

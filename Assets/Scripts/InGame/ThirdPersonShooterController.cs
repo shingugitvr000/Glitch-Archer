@@ -1,8 +1,9 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Cinemachine;
 using StarterAssets;
+
 public class ThirdPersonShooterController : MonoBehaviour
 {
     [SerializeField] private CinemachineVirtualCamera aimVirtualCamera;
@@ -12,39 +13,52 @@ public class ThirdPersonShooterController : MonoBehaviour
     [SerializeField] private Transform debugTransform;
     [SerializeField] private Transform arrowProjectile;
     [SerializeField] private Transform spawnArrowPosition;
-    [SerializeField] private float arrowSpawnDelay = 0.2f; // È­»ì ¹ß»ç Áö¿¬ ½Ã°£
+    [SerializeField] private float arrowSpawnDelay = 0.2f; // í™”ì‚´ ë°œì‚¬ ì§€ì—° ì‹œê°„
+
+    [Header("Aim Movement Settings")]
+    [SerializeField] private bool canMoveWhileAiming = false; // ì¡°ì¤€ ì¤‘ ì´ë™ ê°€ëŠ¥ ì—¬ë¶€
+    [SerializeField] private float aimMoveSpeedMultiplier = 0.3f; // ì¡°ì¤€ ì¤‘ ì´ë™ ì†ë„ ë°°ìœ¨ (ì‚¬ìš© ì•ˆ í•¨)
+
+    [Header("Camera Aim Settings")]
+    [SerializeField] private float maxAimDistance = 100f; // ìµœëŒ€ ì¡°ì¤€ ê±°ë¦¬
+    [SerializeField] private bool useSpawnPositionForAiming = true; // ìŠ¤í° ìœ„ì¹˜ ê¸°ì¤€ ì¡°ì¤€
 
     private ThirdPersonController thirdPersonController;
     private StarterAssetsInputs starterAssetsInputs;
     private Animator animator;
-    // ·¹ÀÌ¾î °¡ÁßÄ¡ ¸ñÇ¥°ª ÀúÀå º¯¼ö
-    private float aimLayerTarget = 0f;
-    private float arrowSpawnTimer = 0f; // È­»ì ¹ß»ç Å¸ÀÌ¸Ó
-    private bool isArrowSpawnPending = false; // È­»ì ¹ß»ç ´ë±â ÁßÀÎÁö È®ÀÎ
-    private Vector3 lastMouseWorldPosition; // ¸¶Áö¸· ¸¶¿ì½º À§Ä¡ ÀúÀå
+    private Camera playerCamera; // í”Œë ˆì´ì–´ ì¹´ë©”ë¼ ì°¸ì¡°
 
-    // ¾Ö´Ï¸ŞÀÌÅÍ ÆÄ¶ó¹ÌÅÍ ÇØ½Ã (¼º´É ÃÖÀûÈ­)
-    private string ShootParamName = "Shoot"; // ½ÇÁ¦ ÆÄ¶ó¹ÌÅÍ ÀÌ¸§
+    // ë ˆì´ì–´ ê°€ì¤‘ì¹˜ ëª©í‘œê°’ ì €ì¥ ë³€ìˆ˜
+    private float aimLayerTarget = 0f;
+    private float arrowSpawnTimer = 0f; // í™”ì‚´ ë°œì‚¬ íƒ€ì´ë¨¸
+    private bool isArrowSpawnPending = false; // í™”ì‚´ ë°œì‚¬ ëŒ€ê¸° ì¤‘ì¸ì§€ í™•ì¸
+    private Vector3 lastMouseWorldPosition; // ë§ˆì§€ë§‰ ë§ˆìš°ìŠ¤ ìœ„ì¹˜ ì €ì¥
+
+    // ì¡°ì¤€ ìƒíƒœ ê´€ë¦¬
+    private bool wasAiming = false; // ì´ì „ í”„ë ˆì„ì—ì„œ ì¡°ì¤€ ì¤‘ì´ì—ˆëŠ”ì§€
+
+    // ì• ë‹ˆë©”ì´í„° íŒŒë¼ë¯¸í„° í•´ì‹œ (ì„±ëŠ¥ ìµœì í™”)
+    private string ShootParamName = "Shoot"; // ì‹¤ì œ íŒŒë¼ë¯¸í„° ì´ë¦„
     private int ShootParam;
 
-    // ¹ß»ç »óÅÂ °ü¸®
-    private bool isShootingRequested = false; // ¹ß»ç ¿äÃ» »óÅÂ
-    private bool isShootAnimationActive = false; // ¹ß»ç ¾Ö´Ï¸ŞÀÌ¼Ç È°¼ºÈ­ »óÅÂ
-    private float shootAnimationCooldown = 0f; // ¿¬¼Ó ¹ß»ç ¹æÁö Äğ´Ù¿î
+    // ë°œì‚¬ ìƒíƒœ ê´€ë¦¬
+    private bool isShootingRequested = false; // ë°œì‚¬ ìš”ì²­ ìƒíƒœ
+    private bool isShootAnimationActive = false; // ë°œì‚¬ ì• ë‹ˆë©”ì´ì…˜ í™œì„±í™” ìƒíƒœ
+    private float shootAnimationCooldown = 0f; // ì—°ì† ë°œì‚¬ ë°©ì§€ ì¿¨ë‹¤ìš´
 
     [Header("Dodge Settings")]
-    [SerializeField] private float dodgeCooldown = 0.7f; // È¸ÇÇ Äğ´Ù¿î ½Ã°£
-    [SerializeField] private float dodgeDuration = 0.5f; // È¸ÇÇ µ¿ÀÛ ½Ã°£
-    [SerializeField] private float dodgeSpeed = 10f; // È¸ÇÇ½Ã ÀÌµ¿ ¼Óµµ
-    [SerializeField] private float dodgeSpeedMultiplier = 1.5f; // È¸ÇÇ ½Ã ¼Óµµ Áõ°¡ ¹èÀ²
+    [SerializeField] private float dodgeCooldown = 0.7f; // íšŒí”¼ ì¿¨ë‹¤ìš´ ì‹œê°„
+    [SerializeField] private float dodgeDuration = 0.5f; // íšŒí”¼ ë™ì‘ ì‹œê°„
+    [SerializeField] private float dodgeSpeed = 10f; // íšŒí”¼ì‹œ ì´ë™ ì†ë„
+    [SerializeField] private float dodgeSpeedMultiplier = 1.5f; // íšŒí”¼ ì‹œ ì†ë„ ì¦ê°€ ë°°ìœ¨
 
-    // È¸ÇÇ °ü·Ã º¯¼ö
+    // íšŒí”¼ ê´€ë ¨ ë³€ìˆ˜
     [SerializeField] private bool isDodging = false;
     [SerializeField] private float dodgeTimer = 0f;
     [SerializeField] public float dodgeCooldownTimer = 0f;
     [SerializeField] private Vector3 dodgeDirection;
 
-    // ¾Ö´Ï¸ŞÀÌÅÍ ÆÄ¶ó¹ÌÅÍ ÇØ½Ã
+    // ì• ë‹ˆë©”ì´í„° íŒŒë¼ë¯¸í„° í•´ì‹œ
     private int DodgeForwardParam;
     private int DodgeBackwardParam;
 
@@ -54,85 +68,83 @@ public class ThirdPersonShooterController : MonoBehaviour
         starterAssetsInputs = GetComponent<StarterAssetsInputs>();
         animator = GetComponentInChildren<Animator>();
 
-        // ¾Ö´Ï¸ŞÀÌÅÍ ÆÄ¶ó¹ÌÅÍ ÇØ½Ã ID ¾ò±â
+        // í”Œë ˆì´ì–´ ì¹´ë©”ë¼ ì°¾ê¸°
+        playerCamera = Camera.main;
+        if (playerCamera == null)
+        {
+            playerCamera = FindObjectOfType<Camera>();
+        }
+
+        // ì• ë‹ˆë©”ì´í„° íŒŒë¼ë¯¸í„° í•´ì‹œ ID ì–»ê¸°
         ShootParam = Animator.StringToHash(ShootParamName);
 
-        // È¸ÇÇ ÆÄ¶ó¹ÌÅÍ ÇØ½Ã ÃÊ±âÈ­
+        // íšŒí”¼ íŒŒë¼ë¯¸í„° í•´ì‹œ ì´ˆê¸°í™”
         DodgeForwardParam = Animator.StringToHash("DodgeForward");
         DodgeBackwardParam = Animator.StringToHash("DodgeBackward");
 
-        // µğ¹ö±ë - ¾Ö´Ï¸ŞÀÌÅÍ ÆÄ¶ó¹ÌÅÍ ¸ñ·Ï È®ÀÎ
+        // ë””ë²„ê¹… - ì• ë‹ˆë©”ì´í„° íŒŒë¼ë¯¸í„° ëª©ë¡ í™•ì¸
         AnimatorControllerParameter[] parameters = animator.parameters;
-        Debug.Log("¾Ö´Ï¸ŞÀÌÅÍ ÆÄ¶ó¹ÌÅÍ ¸ñ·Ï:");
+        Debug.Log("ì• ë‹ˆë©”ì´í„° íŒŒë¼ë¯¸í„° ëª©ë¡:");
         foreach (var param in parameters)
         {
-            Debug.Log($"ÀÌ¸§: {param.name}, Å¸ÀÔ: {param.type}, ÇØ½Ã: {Animator.StringToHash(param.name)}");
+            Debug.Log($"ì´ë¦„: {param.name}, íƒ€ì…: {param.type}, í•´ì‹œ: {Animator.StringToHash(param.name)}");
             if (param.name == ShootParamName)
             {
-                Debug.Log($"Shoot ÆÄ¶ó¹ÌÅÍ ¹ß°ß: ÇØ½Ã ID = {ShootParam}");
+                Debug.Log($"Shoot íŒŒë¼ë¯¸í„° ë°œê²¬: í•´ì‹œ ID = {ShootParam}");
             }
         }
     }
 
     private void Update()
     {
-        Vector3 mouseWorldPosition = Vector3.zero;
-        Vector2 screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
-        Ray ray = Camera.main.ScreenPointToRay(screenCenterPoint);
-        if (Physics.Raycast(ray, out RaycastHit raycastHit, 999f, aimColliderLayerMask))
-        {
-            debugTransform.position = raycastHit.point;
-            mouseWorldPosition = raycastHit.point;
-            lastMouseWorldPosition = mouseWorldPosition; // ¸¶Áö¸· ¸¶¿ì½º À§Ä¡ ÀúÀå
-        }
+        Vector3 mouseWorldPosition = CalculateAimPosition();
 
-        // Äğ´Ù¿î Å¸ÀÌ¸Ó ¾÷µ¥ÀÌÆ®
+        // ì¿¨ë‹¤ìš´ íƒ€ì´ë¨¸ ì—…ë°ì´íŠ¸
         if (shootAnimationCooldown > 0)
         {
             shootAnimationCooldown -= Time.deltaTime;
         }
 
-        // È­»ì ¹ß»ç Å¸ÀÌ¸Ó ¾÷µ¥ÀÌÆ®
+        // í™”ì‚´ ë°œì‚¬ íƒ€ì´ë¨¸ ì—…ë°ì´íŠ¸
         if (isArrowSpawnPending)
         {
             arrowSpawnTimer -= Time.deltaTime;
             if (arrowSpawnTimer <= 0)
             {
-                // È­»ì ¹ß»ç
+                // í™”ì‚´ ë°œì‚¬ - ìŠ¤í° ìœ„ì¹˜ì—ì„œ ë§ˆì§€ë§‰ ì¡°ì¤€ì ìœ¼ë¡œ
                 Vector3 aimDir = (lastMouseWorldPosition - spawnArrowPosition.position).normalized;
-                Instantiate(arrowProjectile, spawnArrowPosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
+                Transform arrow = Instantiate(arrowProjectile, spawnArrowPosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
+
+                // ğŸ¯ ì¤‘ìš”: ë°œì‚¬ì ì •ë³´ ì„¤ì • (í”Œë ˆì´ì–´ê°€ ìœ ì´ì•Œ)
+                ProjectileMoveScript projectile = arrow.GetComponent<ProjectileMoveScript>();
+                if (projectile != null)
+                {
+                    projectile.SetShooter(transform);               // ë°œì‚¬ìë¥¼ í”Œë ˆì´ì–´ë¡œ ì„¤ì •
+                    projectile.isPlayerBullet = true;               // í”Œë ˆì´ì–´ ì´ì•Œì„
+                    projectile.damage = 25f;                        // í”Œë ˆì´ì–´ ì´ì•Œ ë°ë¯¸ì§€
+                }
+
                 isArrowSpawnPending = false;
-                Debug.Log("È­»ì ¹ß»ç ¿Ï·á");
+                Debug.Log("í™”ì‚´ ë°œì‚¬ ì™„ë£Œ");
             }
         }
 
-        // ÇöÀç ¾Ö´Ï¸ŞÀÌÅÍ »óÅÂ ¹× Shoot ÆÄ¶ó¹ÌÅÍ È®ÀÎ
+        // í˜„ì¬ ì• ë‹ˆë©”ì´í„° ìƒíƒœ ë° Shoot íŒŒë¼ë¯¸í„° í™•ì¸
         int currentShootValue = animator.GetInteger(ShootParam);
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(1);
 
-        //// ¾Ö´Ï¸ŞÀÌ¼Ç »óÅÂ µğ¹ö±ë
-        //if (Time.frameCount % 30 == 0) // 30ÇÁ·¹ÀÓ¸¶´Ù ·Î±× Ãâ·Â (ÄÜ¼Ö ¹ü¶÷ ¹æÁö)
-        //{
-        //    Debug.Log($"ÇÁ·¹ÀÓ: {Time.frameCount}, Shoot °ª: {currentShootValue}, " +
-        //              $"¾Ö´Ï¸ŞÀÌ¼Ç »óÅÂ: {stateInfo.shortNameHash}, " +
-        //              $"½Ã°£: {stateInfo.normalizedTime:F2}, " +
-        //              $"isShootingRequested: {isShootingRequested}, " +
-        //              $"isShootAnimationActive: {isShootAnimationActive}, " +
-        //              $"Äğ´Ù¿î: {shootAnimationCooldown:F2}");
-        //}
-
-        // ¹ß»ç ¾Ö´Ï¸ŞÀÌ¼Ç »óÅÂ ÃßÀû
+        // ë°œì‚¬ ì• ë‹ˆë©”ì´ì…˜ ìƒíƒœ ì¶”ì 
         if (stateInfo.IsName("Attack_1Shoot_Loop"))
         {
             isShootAnimationActive = true;
 
-            // ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ °ÅÀÇ ³¡³ª¸é Shoot ÆÄ¶ó¹ÌÅÍ ¸®¼Â
+            // ì• ë‹ˆë©”ì´ì…˜ì´ ê±°ì˜ ëë‚˜ë©´ Shoot íŒŒë¼ë¯¸í„° ë¦¬ì…‹
             if (stateInfo.normalizedTime >= 0.9f && currentShootValue != 0)
             {
                 animator.SetInteger(ShootParam, 0);
                 isShootingRequested = false;
-                shootAnimationCooldown = 0.5f; // ¿¬¼Ó ¹ß»ç ¹æÁö¸¦ À§ÇÑ Äğ´Ù¿î ¼³Á¤
-                Debug.Log("¾Ö´Ï¸ŞÀÌ¼Ç ¿Ï·á - Shoot ÆÄ¶ó¹ÌÅÍ ¸®¼Â");
+                shootAnimationCooldown = 0.5f; // ì—°ì† ë°œì‚¬ ë°©ì§€ë¥¼ ìœ„í•œ ì¿¨ë‹¤ìš´ ì„¤ì •
+                Debug.Log("ì• ë‹ˆë©”ì´ì…˜ ì™„ë£Œ - Shoot íŒŒë¼ë¯¸í„° ë¦¬ì…‹");
             }
         }
         else
@@ -140,116 +152,231 @@ public class ThirdPersonShooterController : MonoBehaviour
             isShootAnimationActive = false;
         }
 
-        // »óÅÂ¿¡ µû¶ó ¸ñÇ¥ °¡ÁßÄ¡ ¼³Á¤
-        if (starterAssetsInputs.aim)
+        // ì¡°ì¤€ ìƒíƒœ ì²˜ë¦¬
+        bool currentlyAiming = starterAssetsInputs.aim;
+
+        if (currentlyAiming)
         {
-            // ¿¡ÀÓ Ä«¸Ş¶ó ¹× ¼³Á¤ È°¼ºÈ­
-            aimVirtualCamera.gameObject.SetActive(true);
-            thirdPersonController.SetSensivitity(aimSensitivity);
-            thirdPersonController.SetRotateOnMove(false);
-
-            // ¿¡ÀÓ ·¹ÀÌ¾î ¸ñÇ¥ ¼³Á¤
-            aimLayerTarget = 1f;
-
-            // ¿¡ÀÓ ¹æÇâÀ¸·Î Ä³¸¯ÅÍ È¸Àü
-            Vector3 worldAimTarget = mouseWorldPosition;
-            worldAimTarget.y = transform.position.y;
-            Vector3 aimDirection = (worldAimTarget - transform.position).normalized;
-            transform.forward = Vector3.Lerp(transform.forward, aimDirection, Time.deltaTime * 20.0f);
-
-            if(animator.GetInteger(ShootParam) == 1)
+            // ì¡°ì¤€ ì‹œì‘ ì‹œ ì²˜ë¦¬
+            if (!wasAiming)
             {
-                animator.SetInteger(ShootParam, 0);
+                OnStartAiming();
             }
-          
-            if (starterAssetsInputs.shoot)
+
+            // ì¡°ì¤€ ì¤‘ ì²˜ë¦¬
+            HandleAiming(mouseWorldPosition);
+        }
+        else
+        {
+            // ì¡°ì¤€ ì¢…ë£Œ ì‹œ ì²˜ë¦¬
+            if (wasAiming)
             {
-                // ¹ß»ç ¿äÃ» ÇÃ·¡±× ¼³Á¤
-                isShootingRequested = true;
+                OnStopAiming();
+            }
+        }
 
-                // Shoot ÆÄ¶ó¹ÌÅÍ ¼³Á¤ Àü¿¡ ·Î±×
-                Debug.Log($"¹ß»ç ¿äÃ» - ÇöÀç Shoot °ª: {animator.GetInteger(ShootParam)}, ½ÃµµÇÕ´Ï´Ù...");
+        // ì´ì „ í”„ë ˆì„ ì¡°ì¤€ ìƒíƒœ ì €ì¥
+        wasAiming = currentlyAiming;
 
-                // Shoot ÆÄ¶ó¹ÌÅÍ¸¦ 1·Î ¼³Á¤ÇÏ¿© ¾Ö´Ï¸ŞÀÌ¼Ç Æ®¸®°Å
-                animator.SetInteger(ShootParam, 1);
+        // ì—ì„ ë ˆì´ì–´ ê°€ì¤‘ì¹˜ ë¶€ë“œëŸ½ê²Œ ì—…ë°ì´íŠ¸
+        animator.SetLayerWeight(1, Mathf.Lerp(animator.GetLayerWeight(1), aimLayerTarget, Time.deltaTime * 10f));
 
-                // ¼³Á¤ ÈÄ È®ÀÎ
-                Debug.Log($"Shoot ÆÄ¶ó¹ÌÅÍ ¼³Á¤ ¿Ï·á - »õ °ª: {animator.GetInteger(ShootParam)}");
+        // íšŒí”¼ ì²˜ë¦¬ (ì¡°ì¤€ ì¤‘ì´ ì•„ë‹ ë•Œë§Œ)
+        HandleDodge();
+    }
 
-                // È­»ì ¹ß»ç Å¸ÀÌ¸Ó ¼³Á¤
-                isArrowSpawnPending = true;
-                arrowSpawnTimer = arrowSpawnDelay;
+    // ì¹´ë©”ë¼ ë°©í–¥ì„ ê³ ë ¤í•œ ì¡°ì¤€ ìœ„ì¹˜ ê³„ì‚°
+    private Vector3 CalculateAimPosition()
+    {
+        Vector3 aimPosition = Vector3.zero;
 
-               
+        if (useSpawnPositionForAiming && spawnArrowPosition != null)
+        {
+            // ë°©ë²• 1: ìŠ¤í° ìœ„ì¹˜ì—ì„œ ì¹´ë©”ë¼ ë°©í–¥ìœ¼ë¡œ ë ˆì´ìºìŠ¤íŠ¸
+            Vector3 cameraForward = playerCamera.transform.forward;
+            Vector3 rayOrigin = spawnArrowPosition.position;
+            Vector3 rayDirection = cameraForward;
 
-                starterAssetsInputs.shoot = false;
+            RaycastHit hit;
+            if (Physics.Raycast(rayOrigin, rayDirection, out hit, maxAimDistance, aimColliderLayerMask))
+            {
+                aimPosition = hit.point;
+                debugTransform.position = hit.point;
+            }
+            else
+            {
+                // ì¶©ëŒí•˜ì§€ ì•Šìœ¼ë©´ ìµœëŒ€ ê±°ë¦¬ì˜ ì  ì„¤ì •
+                aimPosition = rayOrigin + rayDirection * maxAimDistance;
+                debugTransform.position = aimPosition;
             }
         }
         else
         {
-            // ¿¡ÀÓ ºñÈ°¼ºÈ­ »óÅÂ
-            aimVirtualCamera.gameObject.SetActive(false);
-            thirdPersonController.SetSensivitity(normalSensitivity);
-            thirdPersonController.SetRotateOnMove(true);
+            // ë°©ë²• 2: ê¸°ì¡´ ë°©ì‹ (í™”ë©´ ì¤‘ì•™ì—ì„œ ë ˆì´ìºìŠ¤íŠ¸)
+            Vector2 screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
+            Ray ray = playerCamera.ScreenPointToRay(screenCenterPoint);
 
-            // ¿¡ÀÓ ·¹ÀÌ¾î ¸ñÇ¥ 0À¸·Î ¼³Á¤
-            aimLayerTarget = 0f;
+            if (Physics.Raycast(ray, out RaycastHit raycastHit, maxAimDistance, aimColliderLayerMask))
+            {
+                aimPosition = raycastHit.point;
+                debugTransform.position = raycastHit.point;
+            }
+            else
+            {
+                // ì¶©ëŒí•˜ì§€ ì•Šìœ¼ë©´ ë ˆì´ ë°©í–¥ìœ¼ë¡œ ìµœëŒ€ ê±°ë¦¬
+                aimPosition = ray.origin + ray.direction * maxAimDistance;
+                debugTransform.position = aimPosition;
+            }
         }
 
-        // ¿¡ÀÓ ·¹ÀÌ¾î °¡ÁßÄ¡ ºÎµå·´°Ô ¾÷µ¥ÀÌÆ®
-        animator.SetLayerWeight(1, Mathf.Lerp(animator.GetLayerWeight(1), aimLayerTarget, Time.deltaTime * 10f));
+        lastMouseWorldPosition = aimPosition; // ë§ˆì§€ë§‰ ì¡°ì¤€ ìœ„ì¹˜ ì €ì¥
+        return aimPosition;
+    }
 
-        // È¸ÇÇ Äğ´Ù¿î Å¸ÀÌ¸Ó ¾÷µ¥ÀÌÆ®
+    // ì¡°ì¤€ ì‹œì‘ ì‹œ í˜¸ì¶œ
+    private void OnStartAiming()
+    {
+        Debug.Log("ì¡°ì¤€ ì‹œì‘ - ì´ë™ ì œí•œ");
+
+        // ì—ì„ ì¹´ë©”ë¼ ë° ì„¤ì • í™œì„±í™”
+        aimVirtualCamera.gameObject.SetActive(true);
+        thirdPersonController.SetSensivitity(aimSensitivity);
+        thirdPersonController.SetRotateOnMove(false);
+
+        // ì¡°ì¤€ ì¤‘ ì´ë™ ì œí•œ
+        if (!canMoveWhileAiming)
+        {
+            thirdPersonController.SetCanMove(false);
+        }
+
+        // ì—ì„ ë ˆì´ì–´ ëª©í‘œ ì„¤ì •
+        aimLayerTarget = 1f;
+    }
+
+    // ì¡°ì¤€ ì¤‘ ì²˜ë¦¬
+    private void HandleAiming(Vector3 mouseWorldPosition)
+    {
+        // ì—ì„ ë°©í–¥ìœ¼ë¡œ ìºë¦­í„° íšŒì „ (Yì¶•ë§Œ)
+        Vector3 worldAimTarget = mouseWorldPosition;
+        worldAimTarget.y = transform.position.y;
+        Vector3 aimDirection = (worldAimTarget - transform.position).normalized;
+
+        if (aimDirection != Vector3.zero)
+        {
+            transform.forward = Vector3.Lerp(transform.forward, aimDirection, Time.deltaTime * 20.0f);
+        }
+
+        // Shoot íŒŒë¼ë¯¸í„° ì´ˆê¸°í™” (í•„ìš”í•œ ê²½ìš°)
+        if (animator.GetInteger(ShootParam) == 1)
+        {
+            animator.SetInteger(ShootParam, 0);
+        }
+
+        // ë°œì‚¬ ì²˜ë¦¬
+        if (starterAssetsInputs.shoot)
+        {
+            HandleShooting();
+            starterAssetsInputs.shoot = false;
+        }
+    }
+
+    // ì¡°ì¤€ ì¢…ë£Œ ì‹œ í˜¸ì¶œ
+    private void OnStopAiming()
+    {
+        Debug.Log("ì¡°ì¤€ ì¢…ë£Œ - ì´ë™ í—ˆìš©");
+
+        // ì—ì„ ë¹„í™œì„±í™” ìƒíƒœ
+        aimVirtualCamera.gameObject.SetActive(false);
+        thirdPersonController.SetSensivitity(normalSensitivity);
+        thirdPersonController.SetRotateOnMove(true);
+
+        // ì´ë™ ì œí•œ í•´ì œ
+        thirdPersonController.SetCanMove(true);
+
+        // ì—ì„ ë ˆì´ì–´ ëª©í‘œ 0ìœ¼ë¡œ ì„¤ì •
+        aimLayerTarget = 0f;
+    }
+
+    // ë°œì‚¬ ì²˜ë¦¬
+    private void HandleShooting()
+    {
+        // ë°œì‚¬ ìš”ì²­ í”Œë˜ê·¸ ì„¤ì •
+        isShootingRequested = true;
+
+        // Shoot íŒŒë¼ë¯¸í„° ì„¤ì • ì „ì— ë¡œê·¸
+        Debug.Log($"ë°œì‚¬ ìš”ì²­ - í˜„ì¬ Shoot ê°’: {animator.GetInteger(ShootParam)}, ì‹œë„í•©ë‹ˆë‹¤...");
+
+        // Shoot íŒŒë¼ë¯¸í„°ë¥¼ 1ë¡œ ì„¤ì •í•˜ì—¬ ì• ë‹ˆë©”ì´ì…˜ íŠ¸ë¦¬ê±°
+        animator.SetInteger(ShootParam, 1);
+
+        // ì„¤ì • í›„ í™•ì¸
+        Debug.Log($"Shoot íŒŒë¼ë¯¸í„° ì„¤ì • ì™„ë£Œ - ìƒˆ ê°’: {animator.GetInteger(ShootParam)}");
+
+        // í™”ì‚´ ë°œì‚¬ íƒ€ì´ë¨¸ ì„¤ì •
+        isArrowSpawnPending = true;
+        arrowSpawnTimer = arrowSpawnDelay;
+
+        // í˜„ì¬ ì¡°ì¤€ì  ì €ì¥ (ë°œì‚¬ ì‹œì ì˜ ì •í™•í•œ ë°©í–¥)
+        lastMouseWorldPosition = CalculateAimPosition();
+    }
+
+    // íšŒí”¼ ì²˜ë¦¬
+    private void HandleDodge()
+    {
+        // íšŒí”¼ ì¿¨ë‹¤ìš´ íƒ€ì´ë¨¸ ì—…ë°ì´íŠ¸
         if (dodgeCooldownTimer > 0)
         {
             dodgeCooldownTimer -= Time.deltaTime;
         }
 
-        // ÇöÀç È¸ÇÇ ÁßÀÎÁö È®ÀÎ ¹× Ã³¸®
+        // í˜„ì¬ íšŒí”¼ ì¤‘ì¸ì§€ í™•ì¸ ë° ì²˜ë¦¬
         if (isDodging)
         {
             dodgeTimer -= Time.deltaTime;
 
-            // È¸ÇÇ ÀÌµ¿ Ã³¸®
+            // íšŒí”¼ ì´ë™ ì²˜ë¦¬
             transform.position += dodgeDirection * dodgeSpeed * Time.deltaTime;
 
-            // È¸ÇÇ Á¾·á Ã³¸®
+            // íšŒí”¼ ì¢…ë£Œ ì²˜ë¦¬
             if (dodgeTimer <= 0)
             {
                 isDodging = false;
 
-                // ThirdPersonController ½ºÅ©¸³Æ®ÀÇ ÀÌµ¿ Á¦¾î º¹¿ø
-                thirdPersonController.SetCanMove(true);
+                // ì¡°ì¤€ ì¤‘ì´ ì•„ë‹ˆë©´ ThirdPersonController ìŠ¤í¬ë¦½íŠ¸ì˜ ì´ë™ ì œì–´ ë³µì›
+                if (!starterAssetsInputs.aim)
+                {
+                    thirdPersonController.SetCanMove(true);
+                }
             }
         }
         else
         {
-            // È¸ÇÇ ½ÃÀÛ Ã³¸® - Äğ´Ù¿îÀÌ ³¡³µ°í ÇöÀç ¿¡ÀÓÀÌ ¾Æ´Ò¶§¸¸
+            // íšŒí”¼ ì‹œì‘ ì²˜ë¦¬ - ì¿¨ë‹¤ìš´ì´ ëë‚¬ê³  í˜„ì¬ ì—ì„ì´ ì•„ë‹ë•Œë§Œ
             if (!starterAssetsInputs.aim && dodgeCooldownTimer <= 0)
             {
-                // ¾ÕÀ¸·Î È¸ÇÇ
+                // ì•ìœ¼ë¡œ íšŒí”¼
                 if (starterAssetsInputs.dodgeForward)
                 {
                     StartDodge(transform.forward);
-                    // ¾Ö´Ï¸ŞÀÌ¼Ç Æ®¸®°Å (Shoot°ú °°Àº ¹æ½ÄÀ¸·Î Áï½Ã ¸®¼Â)
+                    // ì• ë‹ˆë©”ì´ì…˜ íŠ¸ë¦¬ê±° (Shootê³¼ ê°™ì€ ë°©ì‹ìœ¼ë¡œ ì¦‰ì‹œ ë¦¬ì…‹)
                     animator.SetTrigger(DodgeForwardParam);
-                    
+
                     starterAssetsInputs.dodgeForward = false;
                 }
-                // µÚ·Î È¸ÇÇ
+                // ë’¤ë¡œ íšŒí”¼
                 else if (starterAssetsInputs.dodgeBackward)
                 {
                     StartDodge(-transform.forward);
-                    // ¾Ö´Ï¸ŞÀÌ¼Ç Æ®¸®°Å
+                    // ì• ë‹ˆë©”ì´ì…˜ íŠ¸ë¦¬ê±°
                     animator.SetTrigger(DodgeBackwardParam);
-                  
+
                     starterAssetsInputs.dodgeBackward = false;
                 }
             }
         }
     }
 
-    // È¸ÇÇ ½ÃÀÛ ¸Ş¼­µå
+    // íšŒí”¼ ì‹œì‘ ë©”ì„œë“œ
     private void StartDodge(Vector3 direction)
     {
         isDodging = true;
@@ -257,10 +384,33 @@ public class ThirdPersonShooterController : MonoBehaviour
         dodgeCooldownTimer = dodgeCooldown;
         dodgeDirection = direction.normalized;
 
-        // ThirdPersonController ½ºÅ©¸³Æ®ÀÇ ÀÌµ¿ Á¦¾î ÀÏ½Ã ÁßÁö (¼±ÅÃÀû)
+        // ThirdPersonController ìŠ¤í¬ë¦½íŠ¸ì˜ ì´ë™ ì œì–´ ì¼ì‹œ ì¤‘ì§€
         thirdPersonController.SetCanMove(false);
 
-        // È¸ÇÇ Áß Ä«¸Ş¶ó È¿°ú (¼±ÅÃÀû)
-        // cinemachineTransposer.m_FollowOffset.y = Mathf.Lerp(cinemachineTransposer.m_FollowOffset.y, dodgeCameraOffset, Time.deltaTime * 10f);
+        Debug.Log("íšŒí”¼ ì‹œì‘ - ì´ë™ ì œì–´ ì¼ì‹œ ì¤‘ì§€");
+    }
+
+    // ë””ë²„ê·¸ìš© ê¸°ì¦ˆëª¨ ê·¸ë¦¬ê¸°
+    private void OnDrawGizmos()
+    {
+        if (spawnArrowPosition != null && playerCamera != null)
+        {
+            // ìŠ¤í° ìœ„ì¹˜ì—ì„œ ì¹´ë©”ë¼ ë°©í–¥ìœ¼ë¡œ ì„  ê·¸ë¦¬ê¸°
+            Gizmos.color = Color.red;
+            Vector3 direction = playerCamera.transform.forward;
+            Gizmos.DrawLine(spawnArrowPosition.position, spawnArrowPosition.position + direction * maxAimDistance);
+
+            // ìŠ¤í° ìœ„ì¹˜ í‘œì‹œ
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(spawnArrowPosition.position, 0.1f);
+
+            // ë§ˆì§€ë§‰ ì¡°ì¤€ì  í‘œì‹œ
+            if (lastMouseWorldPosition != Vector3.zero)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawWireSphere(lastMouseWorldPosition, 0.2f);
+                Gizmos.DrawLine(spawnArrowPosition.position, lastMouseWorldPosition);
+            }
+        }
     }
 }

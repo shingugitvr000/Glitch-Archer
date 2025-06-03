@@ -23,6 +23,10 @@ public class ThirdPersonShooterController : MonoBehaviour
     [SerializeField] private float maxAimDistance = 100f; // 최대 조준 거리
     [SerializeField] private bool useSpawnPositionForAiming = true; // 스폰 위치 기준 조준
 
+    [Header("Jump Aim Restriction")]
+    [SerializeField] private bool allowAimWhileJumping = false; // 점프 중 조준 허용 여부
+    [SerializeField] private bool exitAimOnJump = true; // 점프 시 조준 모드 자동 해제
+
     private ThirdPersonController thirdPersonController;
     private StarterAssetsInputs starterAssetsInputs;
     private Animator animator;
@@ -36,6 +40,7 @@ public class ThirdPersonShooterController : MonoBehaviour
 
     // 조준 상태 관리
     private bool wasAiming = false; // 이전 프레임에서 조준 중이었는지
+    private bool wasGrounded = true; // 이전 프레임에서 접지 상태였는지
 
     // 애니메이터 파라미터 해시 (성능 최적화)
     private string ShootParamName = "Shoot"; // 실제 파라미터 이름
@@ -152,10 +157,16 @@ public class ThirdPersonShooterController : MonoBehaviour
             isShootAnimationActive = false;
         }
 
-        // 조준 상태 처리
-        bool currentlyAiming = starterAssetsInputs.aim;
+        // 접지 상태 확인 및 점프 감지
+        bool currentlyGrounded = thirdPersonController.Grounded;
+        bool justJumped = wasGrounded && !currentlyGrounded; // 방금 점프했는지 확인
 
-        if (currentlyAiming)
+        // 조준 상태 처리
+        bool aimInputPressed = starterAssetsInputs.aim;
+        bool canAim = CanAim(currentlyGrounded, justJumped);
+        bool shouldAim = aimInputPressed && canAim;
+
+        if (shouldAim)
         {
             // 조준 시작 시 처리
             if (!wasAiming)
@@ -175,14 +186,44 @@ public class ThirdPersonShooterController : MonoBehaviour
             }
         }
 
-        // 이전 프레임 조준 상태 저장
-        wasAiming = currentlyAiming;
+        // 이전 프레임 상태 저장
+        wasAiming = shouldAim;
+        wasGrounded = currentlyGrounded;
 
         // 에임 레이어 가중치 부드럽게 업데이트
         animator.SetLayerWeight(1, Mathf.Lerp(animator.GetLayerWeight(1), aimLayerTarget, Time.deltaTime * 10f));
 
         // 회피 처리 (조준 중이 아닐 때만)
         HandleDodge();
+    }
+
+    // 조준 가능 여부 확인
+    private bool CanAim(bool isGrounded, bool justJumped)
+    {
+        // 점프 중 조준 제한 확인
+        if (!allowAimWhileJumping && !isGrounded)
+        {
+            if (wasAiming)
+            {
+                Debug.Log("점프로 인해 조준 모드 해제");
+            }
+            return false;
+        }
+
+        // 점프 시 조준 모드 자동 해제
+        if (exitAimOnJump && justJumped && wasAiming)
+        {
+            Debug.Log("점프 감지 - 조준 모드 해제");
+            return false;
+        }
+
+        // 회피 중에는 조준 불가
+        if (isDodging)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     // 카메라 방향을 고려한 조준 위치 계산
@@ -243,8 +284,8 @@ public class ThirdPersonShooterController : MonoBehaviour
         thirdPersonController.SetSensivitity(aimSensitivity);
         thirdPersonController.SetRotateOnMove(false);
 
-        // 조준 중 이동 제한
-        if (!canMoveWhileAiming)
+        // 조준 중 이동 제한 (접지 상태일 때만)
+        if (!canMoveWhileAiming && thirdPersonController.Grounded)
         {
             thirdPersonController.SetCanMove(false);
         }
@@ -272,11 +313,17 @@ public class ThirdPersonShooterController : MonoBehaviour
             animator.SetInteger(ShootParam, 0);
         }
 
-        // 발사 처리
-        if (starterAssetsInputs.shoot)
+        // 발사 처리 (접지 상태일 때만)
+        if (starterAssetsInputs.shoot && thirdPersonController.Grounded)
         {
             HandleShooting();
             starterAssetsInputs.shoot = false;
+        }
+        else if (starterAssetsInputs.shoot && !thirdPersonController.Grounded)
+        {
+            // 공중에서 발사 시도 시 입력 소모만 하고 발사하지 않음
+            starterAssetsInputs.shoot = false;
+            Debug.Log("공중에서는 발사할 수 없습니다");
         }
     }
 
@@ -351,8 +398,8 @@ public class ThirdPersonShooterController : MonoBehaviour
         }
         else
         {
-            // 회피 시작 처리 - 쿨다운이 끝났고 현재 에임이 아닐때만
-            if (!starterAssetsInputs.aim && dodgeCooldownTimer <= 0)
+            // 회피 시작 처리 - 쿨다운이 끝났고 현재 에임이 아닐때만, 그리고 접지 상태일 때만
+            if (!starterAssetsInputs.aim && dodgeCooldownTimer <= 0 && thirdPersonController.Grounded)
             {
                 // 앞으로 회피
                 if (starterAssetsInputs.dodgeForward)
@@ -410,6 +457,13 @@ public class ThirdPersonShooterController : MonoBehaviour
                 Gizmos.color = Color.green;
                 Gizmos.DrawWireSphere(lastMouseWorldPosition, 0.2f);
                 Gizmos.DrawLine(spawnArrowPosition.position, lastMouseWorldPosition);
+            }
+
+            // 접지 상태 표시
+            if (thirdPersonController != null)
+            {
+                Gizmos.color = thirdPersonController.Grounded ? Color.green : Color.red;
+                Gizmos.DrawWireSphere(transform.position, 0.5f);
             }
         }
     }

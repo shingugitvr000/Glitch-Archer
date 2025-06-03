@@ -15,6 +15,10 @@ namespace EnemyAI
         public float viewAngle = 90f;               // 시야각
         public LayerMask obstacleLayer = -1;        // 장애물 레이어
 
+        [Header("즉시 공격 설정")]
+        public float immediateAttackRange = 8f;     // 즉시 공격 범위 (패트롤 중에도 바로 공격)
+        public bool enableImmediateAttack = true;   // 즉시 공격 활성화
+
         // 런타임 데이터 (ScriptableObject에 저장하면 안 되는 데이터)
         private int currentWaypointIndex = 0;
         private float waitTimer = 0f;
@@ -31,9 +35,22 @@ namespace EnemyAI
         public override void UpdateState(EnemyFSM enemy)
         {
             // 플레이어 감지 확인
-            if (CheckForPlayer(enemy))
+            PlayerDetectionResult detectionResult = CheckForPlayer(enemy);
+
+            if (detectionResult.playerDetected)
             {
-                enemy.StateManager.ChangeState(enemy.chaseState);
+                if (detectionResult.shouldAttackImmediately)
+                {
+                    // 즉시 공격 상태로 전환
+                    Debug.Log($"[{enemy.name}] 패트롤 중 플레이어 발견! 즉시 공격 시작 (거리: {detectionResult.distanceToPlayer:F1}m)");
+                    enemy.StateManager.ChangeState(enemy.attackState);
+                }
+                else
+                {
+                    // 추적 상태로 전환
+                    Debug.Log($"[{enemy.name}] 패트롤 중 플레이어 발견! 추적 시작 (거리: {detectionResult.distanceToPlayer:F1}m)");
+                    enemy.StateManager.ChangeState(enemy.chaseState);
+                }
                 return;
             }
 
@@ -104,23 +121,48 @@ namespace EnemyAI
             }
         }
 
-        private bool CheckForPlayer(EnemyFSM enemy)
+        // 플레이어 감지 결과를 담는 구조체
+        private struct PlayerDetectionResult
         {
-            if (enemy.player == null) return false;
+            public bool playerDetected;
+            public bool shouldAttackImmediately;
+            public float distanceToPlayer;
+        }
+
+        private PlayerDetectionResult CheckForPlayer(EnemyFSM enemy)
+        {
+            PlayerDetectionResult result = new PlayerDetectionResult();
+            result.playerDetected = false;
+            result.shouldAttackImmediately = false;
+            result.distanceToPlayer = 0f;
+
+            if (enemy.player == null) return result;
 
             float distanceToPlayer = Vector3.Distance(enemy.transform.position, enemy.player.position);
+            result.distanceToPlayer = distanceToPlayer;
 
             // 거리 체크
-            if (distanceToPlayer > detectionRange) return false;
+            if (distanceToPlayer > detectionRange) return result;
 
             // 시야각 체크
             Vector3 directionToPlayer = (enemy.player.position - enemy.transform.position).normalized;
             float angle = Vector3.Angle(enemy.transform.forward, directionToPlayer);
 
-            if (angle > viewAngle / 2) return false;
+            if (angle > viewAngle / 2) return result;
 
             // 장애물 체크
-            return HasLineOfSight(enemy, enemy.player.position);
+            if (!HasLineOfSight(enemy, enemy.player.position)) return result;
+
+            // 플레이어 감지됨
+            result.playerDetected = true;
+
+            // 즉시 공격 범위 체크
+            if (enableImmediateAttack && distanceToPlayer <= immediateAttackRange)
+            {
+                result.shouldAttackImmediately = true;
+            }
+
+            return result;
         }
 
         private bool HasLineOfSight(EnemyFSM enemy, Vector3 targetPosition)
@@ -197,6 +239,13 @@ namespace EnemyAI
             // 감지 범위
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(enemy.transform.position, detectionRange);
+
+            // 즉시 공격 범위 (새로 추가)
+            if (enableImmediateAttack)
+            {
+                Gizmos.color = Color.red;
+                Gizmos.DrawWireSphere(enemy.transform.position, immediateAttackRange);
+            }
 
             // 시야각
             Gizmos.color = Color.green;

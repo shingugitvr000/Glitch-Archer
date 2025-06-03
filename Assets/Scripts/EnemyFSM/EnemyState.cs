@@ -53,7 +53,7 @@ namespace EnemyAI
         // 상태별 회전 속도 반환
         public virtual float GetTurnSpeed()
         {
-            return 120f; // 기본 회전 속도
+            return 360; // 기본 회전 속도
         }
 
         // Gizmo 그리기 (에디터에서만)

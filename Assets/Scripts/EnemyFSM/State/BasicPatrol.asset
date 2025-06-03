@@ -16,11 +16,13 @@ MonoBehaviour:
   description: "\uAE30\uBCF8 \uD328\uD2B8\uB864 \uC0C1\uD0DC"
   minStateTime: 0.1
   canInterrupt: 1
-  patrolSpeed: 2
+  patrolSpeed: 3
   waitTime: 3
-  detectionRange: 20
+  detectionRange: 10
   randomPatrol: 0
   viewAngle: 270
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 4294967295
+  immediateAttackRange: 8
+  enableImmediateAttack: 1

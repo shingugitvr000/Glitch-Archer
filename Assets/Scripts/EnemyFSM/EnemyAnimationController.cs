@@ -13,7 +13,6 @@ namespace EnemyAI
 
         // 현재 애니메이션 값들
         private float currentSpeed = 0f;
-        private float targetSpeed = 0f;
 
         public void Initialize(EnemyFSM enemyFSM)
         {
@@ -42,10 +41,8 @@ namespace EnemyAI
             // 속도 업데이트 (블렌드 트리가 자동으로 Idle/Walk/Sprint 처리)
             if (enemy.Agent != null)
             {
-                targetSpeed = enemy.Agent.velocity.magnitude;
-            }
-
-            currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, smoothTime * 10f * Time.deltaTime);
+                currentSpeed = enemy.Agent.velocity.magnitude;
+            }            
 
             // Speed만 설정하면 블렌드 트리가 모든 이동 애니메이션 처리
             SetFloat("Speed", currentSpeed);

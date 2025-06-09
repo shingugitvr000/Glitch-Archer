@@ -166,6 +166,9 @@ public class ThirdPersonShooterController : MonoBehaviour
         bool canAim = CanAim(currentlyGrounded, justJumped);
         bool shouldAim = aimInputPressed && canAim;
 
+        // 실시간으로 회전 설정 업데이트
+        thirdPersonController.SetRotateOnMove(!shouldAim);
+
         if (shouldAim)
         {
             // 조준 시작 시 처리

@@ -29,7 +29,7 @@ public abstract class EnemyController : MonoBehaviour
     // 현재 상태 접근용 프로퍼티 추가
     public EnemyStateBase CurrentState => currentState;
 
-    // 공용 데이터 (각 적마다 독립적)
+    // 공유 데이터 (각 적마다 독립적)
     public float currentHealth;
     public float lastAttackTime;
     public float lastSeenTime;
@@ -161,15 +161,41 @@ public abstract class EnemyController : MonoBehaviour
     {
         Debug.Log($"[{name}] 사망!");
 
+        // 렉돌 활성화
+        ActivateRagdoll();
+
         if (Agent != null) Agent.enabled = false;
-        if (Anim != null)
-        {
-            Anim.SetTrigger("Die");
-            Anim.SetBool("IsDead", true);
-        }
 
         this.enabled = false;
         Destroy(gameObject, 5f);
+    }
+
+    void ActivateRagdoll()
+    {
+        // 애니메이터 비활성화
+        if (Anim != null) Anim.enabled = false;
+
+        // 캐릭터 컨트롤러나 메인 콜라이더 비활성화
+        var characterController = GetComponent<CharacterController>();
+        if (characterController != null) characterController.enabled = false;
+
+        var mainCollider = GetComponent<Collider>();
+        if (mainCollider != null) mainCollider.enabled = false;
+
+        // 모든 자식 리지드바디를 물리 활성화
+        Rigidbody[] ragdollRigidbodies = GetComponentsInChildren<Rigidbody>();
+        Collider[] ragdollColliders = GetComponentsInChildren<Collider>();
+
+        foreach (var rb in ragdollRigidbodies)
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true;
+        }
+
+        foreach (var col in ragdollColliders)
+        {
+            col.enabled = true;
+        }
     }
 
     void OnDrawGizmos()

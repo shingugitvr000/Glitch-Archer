@@ -4812,7 +4812,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 908ebaa26dc9c2b4f9178ef1eb9c70ad, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4914,6 +4913,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 50
   fireRate: 5
+  damage: 25
+  isPlayerBullet: 1
   muzzlePrefab: {fileID: 1696487207369030, guid: ef6c24364159eab4eb2c4021175b62e7,
     type: 3}
   hitPrefab: {fileID: 1591689192499646, guid: 37e4ce2dacca6ca4e806fe952f1dbc67, type: 3}
@@ -4967,6 +4968,6 @@ CapsuleCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.1
-  m_Height: 2.5
+  m_Height: 0.6
   m_Direction: 2
   m_Center: {x: 0, y: 0, z: 0}

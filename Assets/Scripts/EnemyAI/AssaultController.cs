@@ -22,7 +22,8 @@ public class AssaultController : EnemyController
     protected override void RegisterStates()
     {
         AddState(new PatrolState());
-        AddState(new AssaultChaseState());  // 공격적인 추적
+        AddState(new ChaseState());         // 기본 추적 상태 추가
+        AddState(new AssaultChaseState());  // 강화된 추적
         AddState(new RapidFireState());     // 연발 공격
 
         ChangeState<PatrolState>();
@@ -31,7 +32,7 @@ public class AssaultController : EnemyController
     protected override void OnTakeDamage(float damage)
     {
         // 돌격형은 데미지를 받으면 더 공격적이 됨
-        if (CurrentState is PatrolState || CurrentState is AssaultChaseState)
+        if (CurrentState is PatrolState || CurrentState is ChaseState || CurrentState is AssaultChaseState)
         {
             ChangeState<RapidFireState>();
         }

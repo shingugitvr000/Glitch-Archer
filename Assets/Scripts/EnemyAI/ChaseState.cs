@@ -22,7 +22,17 @@ public class ChaseState : EnemyStateBase
         // 너무 멀어지면 포기
         if (distance > enemy.LoseTargetRange)
         {
-            enemy.ChangeState<PatrolState>();
+            // 마지막 목격 위치 근처를 잠시 수색 후 포기
+            if (Time.time - enemy.lastSeenTime > 5f) // 5초간 수색
+            {
+                enemy.ChangeState<PatrolState>();
+                return;
+            }
+
+            // 마지막 목격 위치로 이동하여 수색
+            Vector3 lastSeenPosition = enemy.player.position;
+            enemy.Agent.SetDestination(lastSeenPosition);
+            Debug.Log($"[{enemy.name}] 마지막 목격 위치 수색 중...");
             return;
         }
 
@@ -40,6 +50,7 @@ public class ChaseState : EnemyStateBase
         }
 
         // 플레이어 추적
+        enemy.lastSeenTime = Time.time; // 플레이어를 보고 있는 시간 업데이트
         enemy.Agent.SetDestination(enemy.player.position);
         LookAtPlayer();
     }

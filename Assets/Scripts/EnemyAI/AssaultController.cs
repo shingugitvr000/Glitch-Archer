@@ -38,5 +38,16 @@ public class AssaultController : EnemyController
         }
     }
 
+    protected override void HandleLongRangeResponse()
+    {
+        // 돌격형은 적극적으로 추적
+        if (CurrentState is PatrolState)
+        {
+            ChangeState<AssaultChaseState>();
+            Debug.Log($"[{name}] 돌격형 - 적극적 추적 시작");
+        }
+    }
+
+
     protected override Color GetTypeColor() => Color.red;
 }

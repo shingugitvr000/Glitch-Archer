@@ -5,9 +5,9 @@ public class SniperController : EnemyController
     [Header("스나이퍼 설정")]
     [SerializeField] private float detectionRange = 25f;
     [SerializeField] private float attackRange = 20f;
-    [SerializeField] private float loseTargetRange = 40f;
+    [SerializeField] private float loseTargetRange = 60f; // 40f → 60f로 증가
     [SerializeField] private float patrolSpeed = 2f;
-    [SerializeField] private float chaseSpeed = 3f;
+    [SerializeField] private float chaseSpeed = 4f; // 3f → 4f로 증가
     [SerializeField] private float attackCooldown = 3f;
     [SerializeField] private float bulletSpeed = 40f;
     [SerializeField] private float aimTime = 2f;
@@ -34,8 +34,11 @@ public class SniperController : EnemyController
 
     protected override void OnTakeDamage(float damage)
     {
-        // 스나이퍼는 데미지를 받으면 위치를 바꿈
-        ChangeState<RelocateState>();
+        // 스나이퍼는 이미 전투 중일 때만 위치를 바꿈
+        if (!(CurrentState is PatrolState))
+        {
+            ChangeState<RelocateState>();
+        }
     }
 
     protected override Color GetTypeColor() => Color.green;

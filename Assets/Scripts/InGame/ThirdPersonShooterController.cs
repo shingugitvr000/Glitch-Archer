@@ -236,44 +236,54 @@ public class ThirdPersonShooterController : MonoBehaviour
 
         if (useSpawnPositionForAiming && spawnArrowPosition != null)
         {
-            // 방법 1: 스폰 위치에서 카메라 방향으로 레이캐스트
-            Vector3 cameraForward = playerCamera.transform.forward;
-            Vector3 rayOrigin = spawnArrowPosition.position;
-            Vector3 rayDirection = cameraForward;
+            // 수정: 화면 중앙에서 레이를 쏴서 목표점을 찾은 다음,
+            // 그 목표점으로 향하는 방향을 spawnArrowPosition에서 계산
+            Vector2 screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
+            Ray screenRay = playerCamera.ScreenPointToRay(screenCenterPoint);
 
-            RaycastHit hit;
-            if (Physics.Raycast(rayOrigin, rayDirection, out hit, maxAimDistance, aimColliderLayerMask))
+            Vector3 targetPoint;
+            if (Physics.Raycast(screenRay, out RaycastHit hit, maxAimDistance, aimColliderLayerMask))
             {
-                aimPosition = hit.point;
-                debugTransform.position = hit.point;
+                targetPoint = hit.point;
             }
             else
             {
-                // 충돌하지 않으면 최대 거리의 점 설정
-                aimPosition = rayOrigin + rayDirection * maxAimDistance;
-                debugTransform.position = aimPosition;
+                targetPoint = screenRay.origin + screenRay.direction * maxAimDistance;
             }
+
+            // 스폰 위치에서 목표점으로 향하는 방향으로 최종 조준점 계산
+            Vector3 aimDirection = (targetPoint - spawnArrowPosition.position).normalized;
+
+            // 스폰 위치에서 해당 방향으로 레이캐스트하여 실제 충돌점 찾기
+            if (Physics.Raycast(spawnArrowPosition.position, aimDirection, out RaycastHit spawnHit, maxAimDistance, aimColliderLayerMask))
+            {
+                aimPosition = spawnHit.point;
+            }
+            else
+            {
+                aimPosition = spawnArrowPosition.position + aimDirection * maxAimDistance;
+            }
+
+            debugTransform.position = aimPosition;
         }
         else
         {
-            // 방법 2: 기존 방식 (화면 중앙에서 레이캐스트)
+            // 기존 방식 유지
             Vector2 screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
             Ray ray = playerCamera.ScreenPointToRay(screenCenterPoint);
 
             if (Physics.Raycast(ray, out RaycastHit raycastHit, maxAimDistance, aimColliderLayerMask))
             {
                 aimPosition = raycastHit.point;
-                debugTransform.position = raycastHit.point;
             }
             else
             {
-                // 충돌하지 않으면 레이 방향으로 최대 거리
                 aimPosition = ray.origin + ray.direction * maxAimDistance;
-                debugTransform.position = aimPosition;
             }
+            debugTransform.position = aimPosition;
         }
 
-        lastMouseWorldPosition = aimPosition; // 마지막 조준 위치 저장
+        lastMouseWorldPosition = aimPosition;
         return aimPosition;
     }
 

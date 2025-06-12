@@ -39,12 +39,12 @@ public class PatrolState : EnemyStateBase
             // 플레이어를 직접 보고 있는지 확인
             if (hit.transform == enemy.player)
             {
-                Debug.Log($"[{enemy.name}] 플레이어 발견!");
+                //Debug.Log($"[{enemy.name}] 플레이어 발견!");
                 return true;
             }
             else
             {
-                Debug.Log($"[{enemy.name}] 시야 차단됨: {hit.transform.name}");
+                //Debug.Log($"[{enemy.name}] 시야 차단됨: {hit.transform.name}");
                 return false;
             }
         }

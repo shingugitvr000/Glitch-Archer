@@ -4,6 +4,7 @@ public class SniperAttackState : EnemyStateBase
 {
     private float aimStartTime;
     private bool isAiming;
+    private bool hasShot;
 
     public override void Enter(EnemyController enemy)
     {
@@ -11,6 +12,8 @@ public class SniperAttackState : EnemyStateBase
         enemy.Agent.speed = 0f;
         enemy.Agent.SetDestination(enemy.transform.position);
         isAiming = false;
+        hasShot = false;
+        Debug.Log($"[{enemy.name}] 스나이퍼 공격 준비");
     }
 
     public override void Update()
@@ -24,20 +27,22 @@ public class SniperAttackState : EnemyStateBase
 
         float distance = Vector3.Distance(enemy.transform.position, enemy.player.position);
 
-        if (distance > enemy.AttackRange * 1.2f)
+        // 공격 범위를 벗어나면 다시 추적
+        if (distance > enemy.AttackRange * 1.3f)
         {
+            Debug.Log($"[{enemy.name}] 타겟이 너무 멀어짐 - 추적 재개");
             enemy.ChangeState<CautiousChaseState>();
             return;
         }
 
-        if (!isAiming)
+        if (!isAiming && !hasShot)
         {
             // 조준 시작
             isAiming = true;
             aimStartTime = Time.time;
             Debug.Log($"[{enemy.name}] 스나이퍼 조준 시작... ({sniper.AimTime}초)");
         }
-        else
+        else if (isAiming && !hasShot)
         {
             // 조준 중
             LookAtPlayer();
@@ -46,9 +51,16 @@ public class SniperAttackState : EnemyStateBase
             {
                 // 정밀 사격
                 PrecisionShot();
+                hasShot = true;
                 enemy.lastAttackTime = Time.time;
-
-                // 위치 변경으로 전환
+                Debug.Log($"[{enemy.name}] 정밀 사격 완료 - 위치 변경 예정");
+            }
+        }
+        else if (hasShot)
+        {
+            // 사격 후 잠깐 대기 후 위치 변경
+            if (Time.time - enemy.lastAttackTime >= 1f) // 1초 대기
+            {
                 enemy.ChangeState<RelocateState>();
             }
         }
@@ -62,7 +74,8 @@ public class SniperAttackState : EnemyStateBase
         if (direction != Vector3.zero)
         {
             Quaternion lookRotation = Quaternion.LookRotation(direction);
-            enemy.transform.rotation = Quaternion.Slerp(enemy.transform.rotation, lookRotation, Time.deltaTime * 3f);
+            // 조준 중에는 매우 정밀하게 회전
+            enemy.transform.rotation = Quaternion.Slerp(enemy.transform.rotation, lookRotation, Time.deltaTime * 4f);
         }
     }
 

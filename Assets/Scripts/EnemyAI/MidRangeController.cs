@@ -31,10 +31,25 @@ public class MidRangeController : EnemyController
 
     protected override void OnTakeDamage(float damage)
     {
-        // 중거리형은 체력이 낮으면 엄폐 사용
-        if (currentHealth / maxHealth < 0.5f)
+        // 중거리형은 체력이 낮고 이미 전투 중일 때만 엄폐 사용
+        if (currentHealth / maxHealth < 0.5f && !(CurrentState is PatrolState))
         {
             ChangeState<CoverState>();
+        }
+    }
+
+    protected override void HandleLongRangeResponse()
+    {
+        // 중거리형은 체력이 낮으면 엄폐, 높으면 추적
+        if (currentHealth / maxHealth < 0.7f)
+        {
+            ChangeState<CoverState>();
+            Debug.Log($"[{name}] 중거리형 - 엄폐 위치로 이동");
+        }
+        else
+        {
+            ChangeState<TacticalChaseState>();
+            Debug.Log($"[{name}] 중거리형 - 전술적 추적 시작");
         }
     }
 

@@ -116,6 +116,7 @@ public abstract class EnemyController : MonoBehaviour
 
         currentHealth -= damage;
         Debug.Log($"[{name}] 데미지 {damage} 받음! 체력: {currentHealth}/{maxHealth}");
+        Debug.Log($"[{name}] 현재 상태: {currentState?.GetType().Name}");
 
         if (currentHealth <= 0)
         {
@@ -123,16 +124,63 @@ public abstract class EnemyController : MonoBehaviour
             return;
         }
 
-        // 패트롤 중이면 추적으로 전환
+        // 플레이어 참조가 없으면 찾기
+        if (player == null)
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                player = playerObj.transform;
+                Debug.Log($"[{name}] 플레이어 참조 설정됨");
+            }
+            else
+            {
+                Debug.LogWarning($"[{name}] 플레이어를 찾을 수 없음!");
+                return;
+            }
+        }
+
+        // 맞으면 무조건 플레이어를 찾아서 추적 시작
         if (currentState is PatrolState)
         {
-            ChangeState<ChaseState>();
+            Debug.Log($"[{name}] PatrolState에서 추적 상태로 전환 시도");
+
+            // 타입별로 다른 추적 상태로 전환
+            if (this is AssaultController)
+                ChangeState<AssaultChaseState>();
+            else if (this is MidRangeController)
+                ChangeState<TacticalChaseState>();
+            else if (this is SniperController)
+                ChangeState<CautiousChaseState>();
+            else
+                ChangeState<ChaseState>(); // 기본 ChaseState (혹시 모를 경우)
+
+            Debug.Log($"[{name}] 상태 전환 완료 - 새 상태: {currentState?.GetType().Name}");
+            Debug.Log($"[{name}] 플레이어 위치: {player.position}");
+        }
+        else
+        {
+            Debug.Log($"[{name}] PatrolState가 아님 - 현재: {currentState?.GetType().Name}");
         }
 
         // 타입별 특수 반응
+        Debug.Log($"[{name}] OnTakeDamage 호출 전");
         OnTakeDamage(damage);
+        Debug.Log($"[{name}] OnTakeDamage 호출 후 - 상태: {currentState?.GetType().Name}");
 
         AlertNearbyEnemies();
+    }
+
+
+    // 원거리 공격에 대한 반응 (타입별로 다르게 처리)
+    protected virtual void HandleLongRangeResponse()
+    {
+        // 기본 반응: 마지막으로 본 위치로 이동하여 수색
+        if (currentState is PatrolState)
+        {
+            ChangeState<ChaseState>();
+            Debug.Log($"[{name}] 플레이어 수색 모드로 전환");
+        }
     }
 
     protected virtual void OnTakeDamage(float damage) { }

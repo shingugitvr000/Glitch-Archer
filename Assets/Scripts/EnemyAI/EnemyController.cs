@@ -39,6 +39,12 @@ public abstract class EnemyController : MonoBehaviour
     public Vector3 coverPosition;
     public float coverStartTime;
 
+    // 히트 상태 추가
+    private bool isHit = false;
+    private float hitTimer = 0f;
+    private const float HIT_DURATION = 0.5f; // 히트 애니메이션 시간
+
+
     // 각 타입별로 오버라이드할 속성들
     public abstract float DetectionRange { get; }
     public abstract float AttackRange { get; }
@@ -95,6 +101,22 @@ public abstract class EnemyController : MonoBehaviour
     {
         if (currentHealth <= 0) return;
 
+        // 히트 중이면 아무것도 안 함
+        if (isHit)
+        {
+            hitTimer -= Time.deltaTime;
+            if (hitTimer <= 0)
+            {
+                isHit = false;
+                // 히트 끝나면 이동 재개
+                if (Agent != null && currentState != null)
+                {
+                    Agent.isStopped = false;
+                }
+            }
+            return;
+        }
+
         currentState?.Update();
         UpdateAnimation();
     }
@@ -102,6 +124,9 @@ public abstract class EnemyController : MonoBehaviour
     void UpdateAnimation()
     {
         if (Anim == null) return;
+
+        // 죽었으면 애니메이션 업데이트 안 함
+        if (currentHealth <= 0) return;
 
         float speed = Agent.velocity.magnitude;
         Anim.SetFloat("Speed", speed);
@@ -118,11 +143,36 @@ public abstract class EnemyController : MonoBehaviour
         Debug.Log($"[{name}] 데미지 {damage} 받음! 체력: {currentHealth}/{maxHealth}");
         Debug.Log($"[{name}] 현재 상태: {currentState?.GetType().Name}");
 
+
         if (currentHealth <= 0)
         {
             Die();
             return;
         }
+
+        // 히트 애니메이션 추가
+        if (Anim != null)
+        {
+            if (damage >= 50f)
+                Anim.SetTrigger("TakeDamage04");
+            else if (damage >= 35f)
+                Anim.SetTrigger("TakeDamage03");
+            else if (damage >= 20f)
+                Anim.SetTrigger("TakeDamage02");
+            else
+                Anim.SetTrigger("TakeDamage01");
+
+            // 히트 상태로 전환 (이동 정지)
+            isHit = true;
+            hitTimer = HIT_DURATION;
+
+            if (Agent != null)
+            {
+                Agent.isStopped = true; // 이동 정지
+            }
+        }
+
+
 
         // 플레이어 참조가 없으면 찾기
         if (player == null)
@@ -209,41 +259,26 @@ public abstract class EnemyController : MonoBehaviour
     {
         Debug.Log($"[{name}] 사망!");
 
-        // 렉돌 활성화
-        ActivateRagdoll();
+        // 죽음 애니메이션
+        if (Anim != null)
+        {
+            Anim.SetTrigger("Die");
+            Anim.SetBool("IsDead", true);
+            Anim.SetBool("InCombat", false); // InCombat 강제로 끄기
+        }
 
+        // AI 정지
         if (Agent != null) Agent.enabled = false;
 
+        // 상태 정리
+        currentState?.Exit();
+        currentState = null;
+
+        // 스크립트 비활성화
         this.enabled = false;
+
+        // 3초 후 삭제
         Destroy(gameObject, 5f);
-    }
-
-    void ActivateRagdoll()
-    {
-        // 애니메이터 비활성화
-        if (Anim != null) Anim.enabled = false;
-
-        // 캐릭터 컨트롤러나 메인 콜라이더 비활성화
-        var characterController = GetComponent<CharacterController>();
-        if (characterController != null) characterController.enabled = false;
-
-        var mainCollider = GetComponent<Collider>();
-        if (mainCollider != null) mainCollider.enabled = false;
-
-        // 모든 자식 리지드바디를 물리 활성화
-        Rigidbody[] ragdollRigidbodies = GetComponentsInChildren<Rigidbody>();
-        Collider[] ragdollColliders = GetComponentsInChildren<Collider>();
-
-        foreach (var rb in ragdollRigidbodies)
-        {
-            rb.isKinematic = false;
-            rb.useGravity = true;
-        }
-
-        foreach (var col in ragdollColliders)
-        {
-            col.enabled = true;
-        }
     }
 
     void OnDrawGizmos()

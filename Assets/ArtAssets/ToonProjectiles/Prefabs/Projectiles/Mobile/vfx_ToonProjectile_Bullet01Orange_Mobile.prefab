@@ -4911,13 +4911,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12ba759cd568c0e47a7018ab70867a0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 50
-  fireRate: 5
   damage: 25
   isPlayerBullet: 1
+  speed: 50
+  lifeTime: 5
+  fireRate: 5
   muzzlePrefab: {fileID: 1696487207369030, guid: 7714188903e6c4a42aeab5cc44ae010a,
     type: 3}
-  hitPrefab: {fileID: 1591689192499646, guid: 9ce3933b9e1bd504db5ef084c5beef96, type: 3}
+  hitPrefab: {fileID: 1423167456353516, guid: 5c9f2e637478e2b4d94b0245306b5e84, type: 3}
   shotSFX: {fileID: 0}
   hitSFX: {fileID: 0}
   trails: []
@@ -4963,7 +4964,7 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2

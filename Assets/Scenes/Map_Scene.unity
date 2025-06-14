@@ -6313,7 +6313,7 @@ PrefabInstance:
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
@@ -14210,6 +14210,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
+        type: 3}
       propertyPath: m_TagString
       value: Enemy
       objectReference: {fileID: 0}
@@ -20717,6 +20722,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
+        type: 3}
       propertyPath: m_TagString
       value: Enemy
       objectReference: {fileID: 0}
@@ -21811,7 +21821,7 @@ PrefabInstance:
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
@@ -26776,6 +26786,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
+        type: 3}
       propertyPath: m_TagString
       value: Enemy
       objectReference: {fileID: 0}
@@ -28056,6 +28071,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: AvatarSample_T 1 (6)
+      objectReference: {fileID: 0}
+    - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
@@ -30408,6 +30428,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1848816229}
+    - targetCorrespondingSourceObject: {fileID: 4416926081852918481, guid: 64dce48905ffd9b4293e595fa6941544,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1848816233}
   m_SourcePrefab: {fileID: 100100000, guid: 64dce48905ffd9b4293e595fa6941544, type: 3}
 --- !u!114 &1848816222 stripped
 MonoBehaviour:
@@ -30467,7 +30491,7 @@ MonoBehaviour:
   arrowProjectile: {fileID: 4117384310806112, guid: e91b451e2deed4741b2dfa77f40b2fbd,
     type: 3}
   spawnArrowPosition: {fileID: 536307659}
-  arrowSpawnDelay: 0.33
+  arrowSpawnDelay: 0.2
   canMoveWhileAiming: 0
   aimMoveSpeedMultiplier: 0.3
   maxAimDistance: 100
@@ -30482,6 +30506,31 @@ MonoBehaviour:
   dodgeTimer: 0
   dodgeCooldownTimer: 0
   dodgeDirection: {x: 0, y: 0, z: 0}
+--- !u!114 &1848816233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1079232547}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5aa73fcc0138fb84894619bbb33fc440, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseHealth: 100
+  baseAttackPower: 25
+  baseMoveSpeed: 5
+  baseAttackSpeed: 1
+  baseCriticalChance: 0.1
+  baseCriticalDamage: 1.5
+  strengthLevel: 0
+  dexterityLevel: 0
+  focusLevel: 0
+  constitutionLevel: 0
+  resistanceLevel: 0
+  currentHealth: 0
+  availablePoints: 10
 --- !u!1 &1855381529 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7220124231782820268, guid: 824ac94b09deb834f916f957a7fca4ee,
@@ -31255,7 +31304,7 @@ PrefabInstance:
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
@@ -33056,7 +33105,7 @@ PrefabInstance:
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -1728013695380148634, guid: 9197b30efb1bd6e4f8c061a06d972d40,
         type: 3}

@@ -932,7 +932,7 @@ AnimatorState:
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
-  m_TimeParameter: 
+  m_TimeParameter: Speed
 --- !u!206 &8738420251406115919
 BlendTree:
   m_ObjectHideFlags: 1

@@ -66,7 +66,7 @@ public class BurstFireState : EnemyStateBase
     {
         if (enemy.bulletPrefab == null || enemy.firePoint == null) return;
 
-        Vector3 direction = (enemy.player.position - enemy.firePoint.position).normalized;
+        Vector3 direction = (enemy.player.position + new Vector3(0.0f, 1.0f, 0.0f) - enemy.firePoint.position).normalized;
         GameObject bullet = GameObject.Instantiate(enemy.bulletPrefab, enemy.firePoint.position, Quaternion.LookRotation(direction));
 
         var rb = bullet.GetComponent<Rigidbody>();

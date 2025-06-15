@@ -84,7 +84,7 @@ public class RapidFireState : EnemyStateBase
         }
 
         // 총알 발사 방향 계산 (약간의 예측 사격 추가)
-        Vector3 targetPosition = enemy.player.position;
+        Vector3 targetPosition = enemy.player.position + new Vector3(0.0f, 1.0f, 0.0f);
 
         // 플레이어가 움직이고 있다면 예측 사격
         var playerController = enemy.player.GetComponent<CharacterController>();

@@ -29,7 +29,7 @@ public abstract class EnemyController : MonoBehaviour
     // 현재 상태 접근용 프로퍼티 추가
     public EnemyStateBase CurrentState => currentState;
 
-    // 공유 데이터 (각 자료마다 독립적)
+    // 공유 데이터 (각 AI마다 독립적)
     public float currentHealth;
     public float lastAttackTime;
     public float lastSeenTime;
@@ -43,6 +43,9 @@ public abstract class EnemyController : MonoBehaviour
     private bool isHit = false;
     private float hitTimer = 0f;
     private const float HIT_DURATION = 0.5f; // 히트 애니메이션 시간
+
+    // 죽음 상태 추가
+    private bool isDead = false;
 
     // 각 타입별로 오버라이드할 속성들
     public abstract float DetectionRange { get; }
@@ -98,7 +101,8 @@ public abstract class EnemyController : MonoBehaviour
 
     void Update()
     {
-        if (currentHealth <= 0) return;
+        // 죽었으면 아무것도 하지 않음
+        if (isDead) return;
 
         // 히트 중이면 아무것도 안 함
         if (isHit)
@@ -125,7 +129,7 @@ public abstract class EnemyController : MonoBehaviour
         if (Anim == null) return;
 
         // 죽었으면 애니메이션 업데이트 안 함
-        if (currentHealth <= 0) return;
+        if (isDead) return;
 
         float speed = Agent.velocity.magnitude;
         Anim.SetFloat("Speed", speed);
@@ -134,37 +138,19 @@ public abstract class EnemyController : MonoBehaviour
         Anim.SetBool("InCombat", inCombat);
     }
 
-    // ★ 기본 데미지 받기 (화살에서 호출)
-    public virtual void TakeDamage(float damage)
+    // ★ 데미지 받기 - 오버로드 버전 추가 (크리티컬, 폭발 정보 포함)
+    public virtual void TakeDamage(float damage, bool isCritical = false, bool isExplosion = false)
     {
-        TakeDamage(damage, false, false);
-    }
-
-    // ★ 확장된 데미지 받기 (크리티컬, 폭발 정보 포함)
-    public virtual void TakeDamage(float damage, bool isCritical, bool isExplosion)
-    {
-        if (currentHealth <= 0) return;
+        // 이미 죽었으면 데미지 처리 안 함
+        if (isDead) return;
 
         currentHealth -= damage;
 
-        // ★ 데미지 넘버 표시 - 적에서 담당
-        Vector3 damagePosition = transform.position + Vector3.up * 2f;
-
-        if (isCritical && isExplosion)
+        // ★ 데미지 넘버 표시 (DamageNumberManager가 있는 경우)
+        if (DamageNumberManager.Instance != null)
         {
-            DamageNumberManager.ShowCriticalExplosionDamage(damagePosition, damage);
-        }
-        else if (isCritical)
-        {
-            DamageNumberManager.ShowCriticalDamage(damagePosition, damage);
-        }
-        else if (isExplosion)
-        {
-            DamageNumberManager.ShowExplosionDamage(damagePosition, damage);
-        }
-        else
-        {
-            DamageNumberManager.ShowDamage(damagePosition, damage);
+            Vector3 damagePosition = transform.position + Vector3.up * 2f; // 머리 위쪽에 표시
+            DamageNumberManager.Instance.ShowDamageNumber(damagePosition, damage, isCritical, isExplosion);
         }
 
         if (currentHealth <= 0)
@@ -229,6 +215,12 @@ public abstract class EnemyController : MonoBehaviour
         AlertNearbyEnemies();
     }
 
+    // ★ 기존 TakeDamage 메서드 (호환성 유지)
+    public virtual void TakeDamage(float damage)
+    {
+        TakeDamage(damage, false, false);
+    }
+
     // 원거리 공격에 대한 반응 (타입별로 다르게 처리)
     protected virtual void HandleLongRangeResponse()
     {
@@ -264,16 +256,25 @@ public abstract class EnemyController : MonoBehaviour
 
     void Die()
     {
-        // 죽음 애니메이션
+        // 죽음 상태로 전환
+        isDead = true;
+
+        // 죽음 애니메이션 - InCombat 동시 끄기
         if (Anim != null)
         {
+            Anim.SetBool("InCombat", false); // 죽은 컴뱃 모드 동시 해제
             Anim.SetTrigger("Die");
             Anim.SetBool("IsDead", true);
-            Anim.SetBool("InCombat", false); // InCombat 강제로 끄기
         }
 
         // AI 정지
         if (Agent != null) Agent.enabled = false;
+
+        Collider[] colliders = GetComponentsInChildren<Collider>();
+        foreach (Collider col in colliders)
+        {
+            col.enabled = false;
+        }
 
         // 상태 정리
         currentState?.Exit();
@@ -282,7 +283,7 @@ public abstract class EnemyController : MonoBehaviour
         // 스크립트 비활성화
         this.enabled = false;
 
-        // 3초 후 삭제
+        // 5초 후 삭제
         Destroy(gameObject, 5f);
     }
 

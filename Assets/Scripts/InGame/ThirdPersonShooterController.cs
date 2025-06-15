@@ -27,6 +27,9 @@ public class ThirdPersonShooterController : MonoBehaviour
     [SerializeField] private bool allowAimWhileJumping = false;
     [SerializeField] private bool exitAimOnJump = true;
 
+    [Header("Debug")]
+    [SerializeField] private bool showDebugInfo = true;
+
     private ThirdPersonController thirdPersonController;
     private StarterAssetsInputs starterAssetsInputs;
     private Animator animator;
@@ -47,10 +50,11 @@ public class ThirdPersonShooterController : MonoBehaviour
     private string ShootParamName = "Shoot";
     private int ShootParam;
 
-    // 발사 상태 관리
-    private bool isShootingRequested = false;
-    private bool isShootAnimationActive = false;
-    private float shootAnimationCooldown = 0f;
+    // 발사 상태 관리 - 애니메이션과 동기화하되 안전장치 추가
+    private bool canShoot = true;
+    private float lastShootTime = 0f;
+    private bool isShootingInProgress = false;
+    private float shootTimeoutDuration = 2f; // 애니메이션이 꼬였을 때 강제 리셋 시간
 
     [Header("Dodge Settings")]
     [SerializeField] private float dodgeCooldown = 0.7f;
@@ -92,72 +96,48 @@ public class ThirdPersonShooterController : MonoBehaviour
     {
         Vector3 mouseWorldPosition = CalculateAimPosition();
 
-        // 쿨다운 타이머 업데이트
-        if (shootAnimationCooldown > 0)
+        // ★ 발사 쿨다운 업데이트 - 스탯 기반
+        float shootCooldown = playerStats != null ? (1f / playerStats.FinalAttackSpeed) : 1f;
+
+        if (!canShoot && Time.time - lastShootTime >= shootCooldown)
         {
-            shootAnimationCooldown -= Time.deltaTime;
+            canShoot = true;
+            isShootingInProgress = false;
+            if (showDebugInfo) Debug.Log("발사 쿨다운 완료 - 발사 가능");
         }
 
-        // 화살 발사 타이머 업데이트
+        // ★ 애니메이션이 꼬였을 때 안전장치
+        if (isShootingInProgress && Time.time - lastShootTime > shootTimeoutDuration)
+        {
+            if (showDebugInfo) Debug.LogWarning("발사 애니메이션 타임아웃 - 강제 리셋");
+            canShoot = true;
+            isShootingInProgress = false;
+            isArrowSpawnPending = false;
+        }
+
+        // ★ 화살 발사 타이머 업데이트
         if (isArrowSpawnPending)
         {
             arrowSpawnTimer -= Time.deltaTime;
             if (arrowSpawnTimer <= 0)
             {
-                // 화살 발사
-                Vector3 aimDir = (lastMouseWorldPosition - spawnArrowPosition.position).normalized;
-                Transform arrow = Instantiate(arrowProjectile, spawnArrowPosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
-
-                // 발사자 정보 설정
-                ProjectileMoveScript projectile = arrow.GetComponent<ProjectileMoveScript>();
-                if (projectile != null)
-                {
-                    projectile.SetShooter(transform);
-                    projectile.isPlayerBullet = true;
-
-                    // 스탯 기반 데미지 적용
-                    if (playerStats != null)
-                    {
-                        projectile.damage = playerStats.FinalAttackPower;
-                    }
-                }
-
+                SpawnArrow();
                 isArrowSpawnPending = false;
-                Debug.Log($"화살 발사 완료 - 데미지: {projectile?.damage}");
             }
         }
 
-        // 현재 애니메이터 상태 및 Shoot 파라미터 확인
-        int currentShootValue = animator.GetInteger(ShootParam);
+        // 현재 애니메이터 상태 확인 - 발사 완료 감지
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(1);
 
-        // 발사 애니메이션 상태 추적
-        if (stateInfo.IsName("Attack_1Shoot_Loop"))
+        // ★ 발사 애니메이션 완료 감지
+        if (isShootingInProgress && stateInfo.IsName("Attack_1Shoot_Loop"))
         {
-            if (!isShootAnimationActive)
-            {
-                Debug.Log($"발사 애니메이션 시작 - normalizedTime: {stateInfo.normalizedTime:F2}");
-            }
-            isShootAnimationActive = true;
-
-            // 애니메이션이 거의 끝나면 상태 리셋
+            // 애니메이션이 95% 완료되면 발사 완료 처리
             if (stateInfo.normalizedTime >= 0.95f)
             {
-                if (isShootingRequested)
-                {
-                    Debug.Log($"애니메이션 95% 완료 - 상태 리셋 (normalizedTime: {stateInfo.normalizedTime:F2})");
-                    isShootingRequested = false;
-                    shootAnimationCooldown = 0.3f; // 짧은 쿨다운
-                }
+                if (showDebugInfo) Debug.Log("발사 애니메이션 완료 감지");
+                // 쿨다운은 스탯 기반으로 별도 처리
             }
-        }
-        else
-        {
-            if (isShootAnimationActive)
-            {
-                Debug.Log($"발사 애니메이션 종료 - 현재 상태: {stateInfo.shortNameHash}");
-            }
-            isShootAnimationActive = false;
         }
 
         // 접지 상태 확인 및 점프 감지
@@ -204,7 +184,7 @@ public class ThirdPersonShooterController : MonoBehaviour
     {
         if (!allowAimWhileJumping && !isGrounded)
         {
-            if (wasAiming)
+            if (wasAiming && showDebugInfo)
             {
                 Debug.Log("점프로 인해 조준 모드 해제");
             }
@@ -213,7 +193,7 @@ public class ThirdPersonShooterController : MonoBehaviour
 
         if (exitAimOnJump && justJumped && wasAiming)
         {
-            Debug.Log("점프 감지 - 조준 모드 해제");
+            if (showDebugInfo) Debug.Log("점프 감지 - 조준 모드 해제");
             return false;
         }
 
@@ -281,7 +261,7 @@ public class ThirdPersonShooterController : MonoBehaviour
     // 조준 시작
     private void OnStartAiming()
     {
-        Debug.Log("조준 시작 - 이동 제한");
+        if (showDebugInfo) Debug.Log("조준 시작 - 이동 제한");
         aimVirtualCamera.gameObject.SetActive(true);
         thirdPersonController.SetSensivitity(aimSensitivity);
         thirdPersonController.SetRotateOnMove(false);
@@ -306,31 +286,33 @@ public class ThirdPersonShooterController : MonoBehaviour
             transform.forward = Vector3.Lerp(transform.forward, aimDirection, Time.deltaTime * 20.0f);
         }
 
-        // 발사 조건: 접지 상태 + 쿨다운 완료 + 현재 발사 중이 아님
-        bool canShoot = thirdPersonController.Grounded &&
-                       shootAnimationCooldown <= 0 &&
-                       !isShootingRequested &&
-                       !isArrowSpawnPending;
+        // ★ 발사 조건 - 애니메이션과 동기화
+        bool shootConditions = thirdPersonController.Grounded &&  // 땅에 있어야 함
+                               canShoot &&                       // 쿨다운 완료
+                               !isShootingInProgress &&          // 발사 중이 아님
+                               !isArrowSpawnPending;             // 화살 생성 대기 중이 아님
 
-        if (starterAssetsInputs.shoot && canShoot)
+        if (starterAssetsInputs.shoot && shootConditions)
         {
             HandleShooting();
             starterAssetsInputs.shoot = false; // 즉시 입력 소모
         }
         else if (starterAssetsInputs.shoot)
         {
-            // 발사할 수 없는 상황들
-            if (!thirdPersonController.Grounded)
+            // 발사할 수 없는 상황들 - 디버그 정보
+            if (showDebugInfo)
             {
-                Debug.Log("공중에서는 발사할 수 없습니다");
-            }
-            else if (shootAnimationCooldown > 0)
-            {
-                Debug.Log($"발사 쿨다운 중: {shootAnimationCooldown:F2}초 남음");
-            }
-            else if (isShootingRequested || isArrowSpawnPending)
-            {
-                Debug.Log("이미 발사 중입니다");
+                if (!thirdPersonController.Grounded)
+                    Debug.Log("공중에서는 발사할 수 없습니다");
+                else if (!canShoot)
+                {
+                    float shootCooldown = playerStats != null ? (1f / playerStats.FinalAttackSpeed) : 1f;
+                    Debug.Log($"발사 쿨다운 중: {shootCooldown - (Time.time - lastShootTime):F2}초 남음");
+                }
+                else if (isShootingInProgress)
+                    Debug.Log("발사 애니메이션 진행 중");
+                else if (isArrowSpawnPending)
+                    Debug.Log("화살 생성 중");
             }
 
             starterAssetsInputs.shoot = false; // 입력 소모
@@ -340,7 +322,7 @@ public class ThirdPersonShooterController : MonoBehaviour
     // 조준 종료
     private void OnStopAiming()
     {
-        Debug.Log("조준 종료 - 이동 허용");
+        if (showDebugInfo) Debug.Log("조준 종료 - 이동 허용");
         aimVirtualCamera.gameObject.SetActive(false);
         thirdPersonController.SetSensivitity(normalSensitivity);
         thirdPersonController.SetRotateOnMove(true);
@@ -348,40 +330,94 @@ public class ThirdPersonShooterController : MonoBehaviour
         aimLayerTarget = 0f;
     }
 
-    // 발사 처리
+    // ★ 발사 처리 - 애니메이션과 동기화하되 안전장치 포함
     private void HandleShooting()
     {
-        // 이미 발사 중이면 무시
-        if (isShootingRequested || isArrowSpawnPending)
+        if (showDebugInfo) Debug.Log("발사 요청 처리 시작");
+
+        // 발사 상태 업데이트
+        canShoot = false;
+        isShootingInProgress = true;
+        lastShootTime = Time.time;
+
+        // 애니메이션 트리거 (안전하게)
+        try
         {
-            Debug.Log("이미 발사 진행 중 - 무시");
+            animator.SetInteger(ShootParam, 1);
+            StartCoroutine(ResetShootParameterNextFrame());
+        }
+        catch (System.Exception e)
+        {
+            if (showDebugInfo) Debug.LogError($"애니메이션 트리거 실패: {e.Message}");
+            // 애니메이션 실패 시 즉시 화살 발사
+            isArrowSpawnPending = true;
+            arrowSpawnTimer = 0.1f; // 짧은 딜레이 후 발사
             return;
         }
 
-        isShootingRequested = true;
-
-        Debug.Log($"발사 요청 - 현재 Shoot 값: {animator.GetInteger(ShootParam)}");
-
-        // Shoot 파라미터를 1로 설정 후 즉시 0으로 리셋 (원샷 효과)
-        animator.SetInteger(ShootParam, 1);
-
-        // 다음 프레임에 0으로 리셋하기 위해 코루틴 사용
-        StartCoroutine(ResetShootParameterNextFrame());
-
-        // 화살 발사 타이머 설정
+        // 화살 생성 타이머 시작
         isArrowSpawnPending = true;
         arrowSpawnTimer = arrowSpawnDelay;
 
         // 현재 조준점 저장
         lastMouseWorldPosition = CalculateAimPosition();
+
+        if (showDebugInfo) Debug.Log($"화살 생성 예약 - {arrowSpawnDelay}초 후 생성");
     }
 
-    // 다음 프레임에 Shoot 파라미터 리셋
+    // ★ 화살 생성 함수 분리
+    private void SpawnArrow()
+    {
+        if (arrowProjectile == null)
+        {
+            Debug.LogError("arrowProjectile이 null입니다!");
+            return;
+        }
+
+        if (spawnArrowPosition == null)
+        {
+            Debug.LogError("spawnArrowPosition이 null입니다!");
+            return;
+        }
+
+        // 화살 발사
+        Vector3 aimDir = (lastMouseWorldPosition - spawnArrowPosition.position).normalized;
+        Transform arrow = Instantiate(arrowProjectile, spawnArrowPosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
+
+        // 발사자 정보 설정
+        ProjectileMoveScript projectile = arrow.GetComponent<ProjectileMoveScript>();
+        if (projectile != null)
+        {
+            projectile.SetShooter(transform);
+            projectile.isPlayerBullet = true;
+
+            // 스탯 기반 데미지 적용
+            if (playerStats != null)
+            {
+                projectile.damage = playerStats.FinalAttackPower;
+            }
+
+            if (showDebugInfo) Debug.Log($"화살 발사 완료 - 데미지: {projectile.damage}");
+        }
+        else
+        {
+            Debug.LogError("ProjectileMoveScript를 찾을 수 없습니다!");
+        }
+    }
+
+    // ★ 애니메이션 파라미터 리셋 - 실패해도 발사에 영향 없음
     private System.Collections.IEnumerator ResetShootParameterNextFrame()
     {
         yield return null; // 한 프레임 대기
-        animator.SetInteger(ShootParam, 0);
-        Debug.Log("Shoot 파라미터 자동 리셋");
+        try
+        {
+            animator.SetInteger(ShootParam, 0);
+            if (showDebugInfo) Debug.Log("Shoot 파라미터 자동 리셋");
+        }
+        catch (System.Exception e)
+        {
+            if (showDebugInfo) Debug.LogWarning($"애니메이션 리셋 실패: {e.Message} - 발사에는 영향 없음");
+        }
     }
 
     // 회피 처리
@@ -434,6 +470,6 @@ public class ThirdPersonShooterController : MonoBehaviour
         dodgeCooldownTimer = dodgeCooldown;
         dodgeDirection = direction.normalized;
         thirdPersonController.SetCanMove(false);
-        Debug.Log("회피 시작 - 이동 제어 일시 중지");
+        if (showDebugInfo) Debug.Log("회피 시작 - 이동 제어 일시 중지");
     }
 }

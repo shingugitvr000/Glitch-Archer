@@ -29,7 +29,7 @@ public abstract class EnemyController : MonoBehaviour
     // 현재 상태 접근용 프로퍼티 추가
     public EnemyStateBase CurrentState => currentState;
 
-    // 공유 데이터 (각 적마다 독립적)
+    // 공유 데이터 (각 자료마다 독립적)
     public float currentHealth;
     public float lastAttackTime;
     public float lastSeenTime;
@@ -43,7 +43,6 @@ public abstract class EnemyController : MonoBehaviour
     private bool isHit = false;
     private float hitTimer = 0f;
     private const float HIT_DURATION = 0.5f; // 히트 애니메이션 시간
-
 
     // 각 타입별로 오버라이드할 속성들
     public abstract float DetectionRange { get; }
@@ -135,14 +134,38 @@ public abstract class EnemyController : MonoBehaviour
         Anim.SetBool("InCombat", inCombat);
     }
 
+    // ★ 기본 데미지 받기 (화살에서 호출)
     public virtual void TakeDamage(float damage)
+    {
+        TakeDamage(damage, false, false);
+    }
+
+    // ★ 확장된 데미지 받기 (크리티컬, 폭발 정보 포함)
+    public virtual void TakeDamage(float damage, bool isCritical, bool isExplosion)
     {
         if (currentHealth <= 0) return;
 
         currentHealth -= damage;
-        Debug.Log($"[{name}] 데미지 {damage} 받음! 체력: {currentHealth}/{maxHealth}");
-        Debug.Log($"[{name}] 현재 상태: {currentState?.GetType().Name}");
 
+        // ★ 데미지 넘버 표시 - 적에서 담당
+        Vector3 damagePosition = transform.position + Vector3.up * 2f;
+
+        if (isCritical && isExplosion)
+        {
+            DamageNumberManager.ShowCriticalExplosionDamage(damagePosition, damage);
+        }
+        else if (isCritical)
+        {
+            DamageNumberManager.ShowCriticalDamage(damagePosition, damage);
+        }
+        else if (isExplosion)
+        {
+            DamageNumberManager.ShowExplosionDamage(damagePosition, damage);
+        }
+        else
+        {
+            DamageNumberManager.ShowDamage(damagePosition, damage);
+        }
 
         if (currentHealth <= 0)
         {
@@ -172,8 +195,6 @@ public abstract class EnemyController : MonoBehaviour
             }
         }
 
-
-
         // 플레이어 참조가 없으면 찾기
         if (player == null)
         {
@@ -181,11 +202,9 @@ public abstract class EnemyController : MonoBehaviour
             if (playerObj != null)
             {
                 player = playerObj.transform;
-                Debug.Log($"[{name}] 플레이어 참조 설정됨");
             }
             else
             {
-                Debug.LogWarning($"[{name}] 플레이어를 찾을 수 없음!");
                 return;
             }
         }
@@ -193,8 +212,6 @@ public abstract class EnemyController : MonoBehaviour
         // 맞으면 무조건 플레이어를 찾아서 추적 시작
         if (currentState is PatrolState)
         {
-            Debug.Log($"[{name}] PatrolState에서 추적 상태로 전환 시도");
-
             // 타입별로 다른 추적 상태로 전환
             if (this is AssaultController)
                 ChangeState<AssaultChaseState>();
@@ -204,23 +221,13 @@ public abstract class EnemyController : MonoBehaviour
                 ChangeState<CautiousChaseState>();
             else
                 ChangeState<ChaseState>(); // 기본 ChaseState (혹시 모를 경우)
-
-            Debug.Log($"[{name}] 상태 전환 완료 - 새 상태: {currentState?.GetType().Name}");
-            Debug.Log($"[{name}] 플레이어 위치: {player.position}");
-        }
-        else
-        {
-            Debug.Log($"[{name}] PatrolState가 아님 - 현재: {currentState?.GetType().Name}");
         }
 
         // 타입별 특수 반응
-        Debug.Log($"[{name}] OnTakeDamage 호출 전");
         OnTakeDamage(damage);
-        Debug.Log($"[{name}] OnTakeDamage 호출 후 - 상태: {currentState?.GetType().Name}");
 
         AlertNearbyEnemies();
     }
-
 
     // 원거리 공격에 대한 반응 (타입별로 다르게 처리)
     protected virtual void HandleLongRangeResponse()
@@ -257,8 +264,6 @@ public abstract class EnemyController : MonoBehaviour
 
     void Die()
     {
-        Debug.Log($"[{name}] 사망!");
-
         // 죽음 애니메이션
         if (Anim != null)
         {

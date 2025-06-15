@@ -1,6 +1,8 @@
 using UnityEngine;
 using System;
 using StarterAssets;
+using System.Collections;
+using System.Collections.Generic;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -36,6 +38,30 @@ public class PlayerStats : MonoBehaviour
     // 이벤트
     public static event Action<float, float> OnHealthChanged; // 현재체력, 최대체력
     public static event Action OnStatsChanged;
+
+    [Header("화살 스킬")]
+    public int pierceCount = 0;                    // 관통 횟수
+    public bool hasGuidedAfterPierce = false;      // 관통 후 유도 여부  
+    public float guidedRange = 15f;                // 유도 범위
+
+
+    [Header("폭발 스킬")]
+    public bool hasExplosiveArrow = false;    // 폭발 화살 여부
+    public float explosiveRadius = 5f;        // 폭발 반경
+    public float explosiveDamage = 0.7f;      // 폭발 데미지 배율 (원래 데미지의 70%)
+
+    [Header("크리티컬 ")]
+    public float criticalChance = 0.15f;      // 크리티컬 확률 (15%)
+    public float criticalMultiplier = 2.0f;   // 크리티컬 배율 (2배)
+
+    public bool ShouldPierce()
+    {
+        return pierceCount > 0;
+    }
+    public bool ShouldCritical()
+    {
+        return UnityEngine.Random.value < criticalChance;
+    }
 
     private void Awake()
     {
@@ -133,12 +159,6 @@ public class PlayerStats : MonoBehaviour
         finalDamage += strengthLevel * 2f;
 
         return finalDamage;
-    }
-
-    // 관통 여부 확인
-    public bool ShouldPierce()
-    {
-        return UnityEngine.Random.value < PierceChance;
     }
 
     private void Die()

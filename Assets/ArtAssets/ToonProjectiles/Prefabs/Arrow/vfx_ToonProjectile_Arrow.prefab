@@ -19515,6 +19515,11 @@ MonoBehaviour:
   speed: 70
   lifeTime: 5
   fireRate: 4
+  muzzlePrefab: {fileID: 0}
+  hitPrefab: {fileID: 1423167456353516, guid: 5c9f2e637478e2b4d94b0245306b5e84, type: 3}
+  shotSFX: {fileID: 0}
+  hitSFX: {fileID: 0}
+  trails: []
 --- !u!65 &65132404271668706
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -19560,7 +19565,7 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 1
   m_IsKinematic: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 2
 --- !u!1 &975509152423407964

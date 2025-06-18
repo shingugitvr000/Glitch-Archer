@@ -11,6 +11,10 @@ public class ProjectileMoveScript : MonoBehaviour
     public float lifeTime = 5f;
     public float fireRate = 1f; // SpawnProjectilesScript 호환성을 위해 추가
 
+    [Header("화살 궤적 설정 (플레이어 전용)")]
+    [SerializeField] private float gravityScale = 1.5f;    // 중력 강도
+    [SerializeField] private float launchAngle = 0f;       // 발사 상향각 (도) - 0이면 조준점 그대로
+
     [Header("이펙트 (선택)")]
     public GameObject muzzlePrefab;
     public GameObject hitPrefab;
@@ -41,13 +45,29 @@ public class ProjectileMoveScript : MonoBehaviour
             bulletRigidbody = gameObject.AddComponent<Rigidbody>();
         }
 
-        // ★ Rigidbody 설정 - 관통 방지 강화
-        bulletRigidbody.useGravity = false;
+        // ★ Rigidbody 설정
         bulletRigidbody.drag = 0f;
         bulletRigidbody.angularDrag = 0f;
-        bulletRigidbody.freezeRotation = true;
-        bulletRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // 더 정확한 충돌 감지
-        bulletRigidbody.interpolation = RigidbodyInterpolation.Interpolate; // 부드러운 움직임
+        bulletRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        bulletRigidbody.interpolation = RigidbodyInterpolation.Interpolate;
+
+        // 플레이어 화살과 적 총알 구분 설정
+        if (isPlayerBullet)
+        {
+            // 화살: 중력 적용, 회전 허용 (한조 스타일)
+            bulletRigidbody.useGravity = true;
+            bulletRigidbody.freezeRotation = false;
+            bulletRigidbody.mass = 0.1f; // 적당한 질량
+            bulletRigidbody.drag = 0.1f; // 약간의 공기저항
+        }
+        else
+        {
+            // 적 총알: 중력 무시, 회전 고정 (직선 비행)
+            bulletRigidbody.useGravity = false;
+            bulletRigidbody.freezeRotation = true;
+            bulletRigidbody.mass = 0.01f;
+            bulletRigidbody.drag = 0f;
+        }
     }
 
     private void Start()
@@ -56,8 +76,18 @@ public class ProjectileMoveScript : MonoBehaviour
         originalDirection = transform.forward;
         previousPosition = transform.position; // 초기 위치 저장
 
-        // 화살 이동 (기존 ArrowProjectile 로직)
-        bulletRigidbody.velocity = originalDirection * speed;
+        // 발사 방식 구분
+        if (isPlayerBullet)
+        {
+            LaunchArrow(); // 플레이어: 화살 발사 (조준방향 + 선택적 상향각 + 중력)
+
+            // 화살에 추가 중력 적용
+            bulletRigidbody.AddForce(Vector3.down * gravityScale * 10f, ForceMode.Acceleration);
+        }
+        else
+        {
+            LaunchBullet(); // 적: 총알 발사 (직선)
+        }
 
         // 생명주기 설정
         Destroy(gameObject, lifeTime);
@@ -79,8 +109,33 @@ public class ProjectileMoveScript : MonoBehaviour
         // 이펙트 재생
         PlayMuzzleEffect();
         PlayShotSound();
+    }
 
-        Destroy(gameObject, 5f);
+    // ★ 플레이어 화살 발사 (한조 스타일 - 조준방향 + 선택적 상향각 + 중력)
+    private void LaunchArrow()
+    {
+        // 조준한 방향에서 선택적으로 상향각 추가
+        Vector3 launchDirection = originalDirection;
+
+        if (launchAngle > 0)
+        {
+            Vector3 rightVector = Vector3.Cross(originalDirection, Vector3.up).normalized;
+            launchDirection = Quaternion.AngleAxis(launchAngle, rightVector) * originalDirection;
+        }
+
+        // 초기 속도를 방향으로 설정
+        bulletRigidbody.velocity = launchDirection * speed;
+
+        // 화살 방향 설정
+        transform.rotation = Quaternion.LookRotation(launchDirection);
+    }
+
+    // ★ 적 총알 발사 (직선 궤적)
+    private void LaunchBullet()
+    {
+        // 기존 방식 그대로 - 직선 비행
+        bulletRigidbody.velocity = originalDirection * speed;
+        transform.rotation = Quaternion.LookRotation(originalDirection);
     }
 
     private void FixedUpdate()
@@ -88,7 +143,20 @@ public class ProjectileMoveScript : MonoBehaviour
         // ★ 수동 레이캐스트로 추가 충돌 감지 (관통 방지)
         PerformManualCollisionCheck();
 
-        // 유도 모드일 때 타겟 추적
+        // 플레이어 화살인 경우 추가 중력과 회전 업데이트
+        if (isPlayerBullet)
+        {
+            // 지속적으로 중력 적용
+            bulletRigidbody.AddForce(Vector3.down * gravityScale * 5f, ForceMode.Acceleration);
+
+            // 화살이 속도 방향을 바라보도록 회전
+            if (bulletRigidbody.velocity.magnitude > 0.1f)
+            {
+                transform.rotation = Quaternion.LookRotation(bulletRigidbody.velocity.normalized);
+            }
+        }
+
+        // 유도 모드일 때 타겟 추적 (화살도 유도 가능)
         if (isGuided && guidedTarget != null)
         {
             // 타겟이 죽었거나 없어졌는지 확인
@@ -98,12 +166,23 @@ public class ProjectileMoveScript : MonoBehaviour
                 guidedTarget = null;
             }
 
-            // 유효한 타겟이 있으면 추적
+            // 유효한 타겟이 있으면 추적 (화살은 중력을 고려한 유도)
             if (guidedTarget != null)
             {
                 Vector3 direction = (guidedTarget.position - transform.position).normalized;
-                bulletRigidbody.velocity = direction * speed * 0.8f; // 유도 시 속도 약간 감소
-                transform.rotation = Quaternion.LookRotation(direction);
+
+                if (isPlayerBullet)
+                {
+                    // 화살: 기존 속도에 유도력 추가 (중력과 함께)
+                    Vector3 guidedForce = direction * speed * 0.5f;
+                    bulletRigidbody.AddForce(guidedForce, ForceMode.Force);
+                }
+                else
+                {
+                    // 총알: 직접 속도 변경
+                    bulletRigidbody.velocity = direction * speed * 0.8f;
+                    transform.rotation = Quaternion.LookRotation(direction);
+                }
                 return;
             }
         }
@@ -113,8 +192,8 @@ public class ProjectileMoveScript : MonoBehaviour
         {
             guidedTarget = FindClosestEnemy();
 
-            // 새로운 대상도 없으면 원래 방향으로 복귀
-            if (guidedTarget == null)
+            // 새로운 대상도 없고 총알이면 원래 방향으로 복귀
+            if (guidedTarget == null && !isPlayerBullet)
             {
                 isGuided = false;
                 bulletRigidbody.velocity = originalDirection * speed;
@@ -242,7 +321,7 @@ public class ProjectileMoveScript : MonoBehaviour
         DestroyProjectile();
     }
 
-    // ★ 화살 파괴 함수
+    // ★ 화살/총알 파괴 함수
     private void DestroyProjectile()
     {
         // 물리 비활성화

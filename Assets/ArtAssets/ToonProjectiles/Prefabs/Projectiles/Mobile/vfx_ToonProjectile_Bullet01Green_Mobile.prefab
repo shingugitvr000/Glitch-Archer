@@ -4916,6 +4916,18 @@ MonoBehaviour:
   speed: 50
   lifeTime: 5
   fireRate: 5
+  gravityScale: 2
+  launchAngle: 3
+  muzzlePrefab: {fileID: 1252424093267096, guid: 98b1efadc03dfd140af3017c2e68a682,
+    type: 3}
+  hitPrefab: {fileID: 1423167456353516, guid: dbd5e0890374e364f9925a8ba6460fc4, type: 3}
+  shotSFX: {fileID: 0}
+  hitSFX: {fileID: 0}
+  trails: []
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  raycastDistance: 2
 --- !u!54 &54262650293551616
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -4,9 +4,9 @@ using TMPro;
 public class DamageNumber : MonoBehaviour
 {
     [Header("애니메이션 설정")]
-    public float lifetime = 2f;           // 표시 시간
-    public float moveSpeed = 80f;         // 위로 올라가는 속도
-    public float fadeSpeed = 1.5f;        // 페이드 아웃 속도
+    private float lifetime = 2f;           // 표시 시간
+    private float moveSpeed = 200f;         // 위로 올라가는 속도
+    private float fadeSpeed = 1.5f;        // 페이드 아웃 속도
 
     private TextMeshProUGUI damageText;
     private RectTransform rectTransform;
@@ -17,6 +17,12 @@ public class DamageNumber : MonoBehaviour
         damageText = GetComponent<TextMeshProUGUI>();
         rectTransform = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
+
+        // CanvasGroup이 없으면 추가
+        if (canvasGroup == null)
+        {
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
     }
 
     private void Start()
@@ -27,13 +33,17 @@ public class DamageNumber : MonoBehaviour
 
     private void Update()
     {
-        // 위로 천천히 올라가는 애니메이션
-        rectTransform.anchoredPosition += Vector2.up * moveSpeed * Time.deltaTime;
+        // ★ 위로 천천히 올라가는 애니메이션 - Vector2.up 사용
+        Vector2 currentPos = rectTransform.anchoredPosition;
+        currentPos.y += moveSpeed * Time.deltaTime;
+        rectTransform.anchoredPosition = currentPos;
 
         // 페이드 아웃
         if (canvasGroup != null)
         {
             canvasGroup.alpha -= fadeSpeed * Time.deltaTime;
+            // 알파값이 0 이하가 되지 않도록 제한
+            canvasGroup.alpha = Mathf.Max(0, canvasGroup.alpha);
         }
     }
 

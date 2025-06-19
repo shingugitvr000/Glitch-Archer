@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System;
 using StarterAssets;
 using System.Collections;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 public class PlayerStats : MonoBehaviour
 {
-    [Header("±âº» ½ºÅÈ")]
+    [Header("ê¸°ë³¸ ìŠ¤íƒ¯")]
     [SerializeField] private float baseHealth = 100f;
     [SerializeField] private float baseAttackPower = 25f;
     [SerializeField] private float baseMoveSpeed = 5f;
@@ -14,50 +14,70 @@ public class PlayerStats : MonoBehaviour
     [SerializeField] private float baseCriticalChance = 0.1f;
     [SerializeField] private float baseCriticalDamage = 1.5f;
 
-    [Header("¾÷±×·¹ÀÌµå ½ºÅÈ")]
-    [SerializeField] public int strengthLevel = 0;      // ±Ù·Â - °ø°İ·Â, °üÅë·Â
-    [SerializeField] public int dexterityLevel = 0;     // ±â¹ÎÇÔ - °ø°İ¼Óµµ, Å©¸®À²
-    [SerializeField] public int focusLevel = 0;         // ÁıÁß - Á¤È®µµ, ½ºÅ³ Äğ´Ù¿î
-    [SerializeField] public int constitutionLevel = 0;  // Ã¼·Â - HP, ¹æ¾î·Â
-    [SerializeField] public int resistanceLevel = 0;    // ÀúÇ× - »óÅÂÀÌ»ó ÀúÇ×
+    [Header("ì—…ê·¸ë ˆì´ë“œ ìŠ¤íƒ¯")]
+    [SerializeField] public int strengthLevel = 0;      // ê·¼ë ¥ - ê³µê²©ë ¥, ê´€í†µë ¥
+    [SerializeField] public int dexterityLevel = 0;     // ê¸°ë¯¼í•¨ - ê³µê²©ì†ë„, í¬ë¦¬í‹°ì»¬
+    [SerializeField] public int focusLevel = 0;         // ì§‘ì¤‘ - ì •í™•ë„, ìŠ¤í‚¬ ì¿¨ë‹¤ìš´
+    [SerializeField] public int constitutionLevel = 0;  // ì²´ë ¥ - HP, ë°©ì–´ë ¥
+    [SerializeField] public int resistanceLevel = 0;    // ì €í•­ - ìƒíƒœì´ìƒ ì €í•­
 
-    [Header("ÇöÀç »óÅÂ")]
+    [Header("í˜„ì¬ ìƒíƒœ")]
     public float currentHealth;
-    public int availablePoints = 10; // »ç¿ë °¡´ÉÇÑ ½ºÅÈ Æ÷ÀÎÆ®
+    public int availablePoints = 10; // ì‚¬ìš© ê°€ëŠ¥í•œ ìŠ¤íƒ¯ í¬ì¸íŠ¸
 
-    // °è»êµÈ ÃÖÁ¾ ½ºÅÈµé
+    [Header("ìŠ¤í‚¬ ë³´ë„ˆìŠ¤ (ëŸ°íƒ€ì„)")]
+    [SerializeField] private float skillAttackPowerBonus = 0f;
+    [SerializeField] private float skillHealthBonus = 0f;
+    [SerializeField] private float skillMoveSpeedBonus = 0f;
+
+    [Header("ê±°ë¦¬ ë°ë¯¸ì§€ ìŠ¤í‚¬")]
+    public bool hasDistanceDamage = false;        // ê±°ë¦¬ ë°ë¯¸ì§€ í™œì„±í™” ì—¬ë¶€
+    public float distanceDamageMultiplier = 0.1f; // ê±°ë¦¬ë‹¹ ë°ë¯¸ì§€ ì¦ê°€ìœ¨ (10% per 10m)
+    public float maxDistanceBonus = 50f;          // ìµœëŒ€ ê±°ë¦¬ (50m)
+
+    // ê³„ì‚°ëœ ìµœì¢… ìŠ¤íƒ¯ë“¤
     public float FinalHealth => baseHealth + (constitutionLevel * 20f);
     public float FinalAttackPower => baseAttackPower + (strengthLevel * 5f);
     public float FinalMoveSpeed => baseMoveSpeed + (dexterityLevel * 0.2f);
     public float FinalAttackSpeed => baseAttackSpeed + (dexterityLevel * 0.1f);
     public float FinalCriticalChance => Mathf.Clamp01(baseCriticalChance + (dexterityLevel * 0.02f));
     public float FinalCriticalDamage => baseCriticalDamage + (strengthLevel * 0.1f);
-    public float PierceChance => strengthLevel * 0.05f; // °üÅë È®·ü
-    public float StatusResistance => resistanceLevel * 0.1f; // »óÅÂÀÌ»ó ÀúÇ×
+    public float PierceChance => strengthLevel * 0.05f; // ê´€í†µ í™•ë¥ 
+    public float StatusResistance => resistanceLevel * 0.1f; // ìƒíƒœì´ìƒ ì €í•­
 
-    // ÀÌº¥Æ®
-    public static event Action<float, float> OnHealthChanged; // ÇöÀçÃ¼·Â, ÃÖ´ëÃ¼·Â
+    // ìŠ¤í‚¬ ë³´ë„ˆìŠ¤ê°€ í¬í•¨ëœ ìµœì¢… ìŠ¤íƒ¯ë“¤
+    public float FinalHealthWithSkills => FinalHealth + skillHealthBonus;
+    public float FinalAttackPowerWithSkills => FinalAttackPower + skillAttackPowerBonus;
+    public float FinalMoveSpeedWithSkills => FinalMoveSpeed + skillMoveSpeedBonus;
+
+    // ì´ë²¤íŠ¸
+    public static event Action<float, float> OnHealthChanged; // í˜„ì¬ì²´ë ¥, ìµœëŒ€ì²´ë ¥
     public static event Action OnStatsChanged;
 
-    [Header("È­»ì ½ºÅ³")]
-    public int pierceCount = 0;                    // °üÅë È½¼ö
-    public bool hasGuidedAfterPierce = false;      // °üÅë ÈÄ À¯µµ ¿©ºÎ  
-    public float guidedRange = 15f;                // À¯µµ ¹üÀ§
+    [Header("í™”ì‚´ ìŠ¤í‚¬")]
+    public int pierceCount = 0;                    // ê´€í†µ íšŸìˆ˜
+    public bool hasGuidedAfterPierce = false;      // ê´€í†µ í›„ ìœ ë„ ì—¬ë¶€  
+    public float guidedRange = 15f;                // ìœ ë„ ë²”ìœ„
 
+    [Header("í­ë°œ ìŠ¤í‚¬")]
+    public bool hasExplosiveArrow = false;    // í­ë°œ í™”ì‚´ ì—¬ë¶€
+    public float explosiveRadius = 5f;        // í­ë°œ ë²”ê²½
+    public float explosiveDamage = 0.7f;      // í­ë°œ ë°ë¯¸ì§€ ë¹„ìœ¨ (ì›ë˜ ë°ë¯¸ì§€ì˜ 70%)
 
-    [Header("Æø¹ß ½ºÅ³")]
-    public bool hasExplosiveArrow = false;    // Æø¹ß È­»ì ¿©ºÎ
-    public float explosiveRadius = 5f;        // Æø¹ß ¹İ°æ
-    public float explosiveDamage = 0.7f;      // Æø¹ß µ¥¹ÌÁö ¹èÀ² (¿ø·¡ µ¥¹ÌÁöÀÇ 70%)
+    [Header("í¬ë¦¬í‹°ì»¬ ")]
+    public float criticalChance = 0.15f;      // í¬ë¦¬í‹°ì»¬ í™•ë¥  (15%)
+    public float criticalMultiplier = 2.0f;   // í¬ë¦¬í‹°ì»¬ ë¹„ìœ¨ (2ë°°)
 
-    [Header("Å©¸®Æ¼ÄÃ ")]
-    public float criticalChance = 0.15f;      // Å©¸®Æ¼ÄÃ È®·ü (15%)
-    public float criticalMultiplier = 2.0f;   // Å©¸®Æ¼ÄÃ ¹èÀ² (2¹è)
+    // ìŠ¤í‚¬ ë³´ë„ˆìŠ¤ ì ‘ê·¼ì
+    public float SkillAttackPowerBonus => skillAttackPowerBonus;
+    public float SkillHealthBonus => skillHealthBonus;
+    public float SkillMoveSpeedBonus => skillMoveSpeedBonus;
 
     public bool ShouldPierce()
     {
         return pierceCount > 0;
     }
+
     public bool ShouldCritical()
     {
         return UnityEngine.Random.value < criticalChance;
@@ -65,23 +85,76 @@ public class PlayerStats : MonoBehaviour
 
     private void Awake()
     {
-        currentHealth = FinalHealth;
+        currentHealth = FinalHealthWithSkills;
     }
 
     private void Start()
     {
-        // ±âÁ¸ ThirdPersonControllerÀÇ ÀÌµ¿¼Óµµ Àû¿ë
+        // ê¸°ì¡´ ThirdPersonControllerì˜ ì´ë™ì†ë„ ì ìš©
         var controller = GetComponent<ThirdPersonController>();
         if (controller != null)
         {
-            controller.MoveSpeed = FinalMoveSpeed;
-            controller.SprintSpeed = FinalMoveSpeed * 1.8f;
+            controller.MoveSpeed = FinalMoveSpeedWithSkills;
+            controller.SprintSpeed = FinalMoveSpeedWithSkills * 1.8f;
         }
 
         NotifyStatsChanged();
     }
 
-    // ½ºÅÈ ¾÷±×·¹ÀÌµå
+    // ìŠ¤í‚¬ ë³´ë„ˆìŠ¤ ì„¤ì • ë©”ì„œë“œë“¤
+    public void SetSkillAttackPowerBonus(float bonus)
+    {
+        skillAttackPowerBonus = bonus;
+        Debug.Log($"ìŠ¤í‚¬ ê³µê²©ë ¥ ë³´ë„ˆìŠ¤ ì„¤ì •: +{bonus}");
+    }
+
+    public void SetSkillHealthBonus(float bonus)
+    {
+        float oldMaxHealth = FinalHealthWithSkills;
+        skillHealthBonus = bonus;
+
+        // ì²´ë ¥ ë¹„ìœ¨ ìœ ì§€í•˜ë©´ì„œ ìµœëŒ€ ì²´ë ¥ ì—…ë°ì´íŠ¸
+        if (oldMaxHealth > 0)
+        {
+            float healthRatio = currentHealth / oldMaxHealth;
+            float newMaxHealth = FinalHealthWithSkills;
+            currentHealth = newMaxHealth * healthRatio;
+        }
+        else
+        {
+            currentHealth = FinalHealthWithSkills;
+        }
+
+        OnHealthChanged?.Invoke(currentHealth, FinalHealthWithSkills);
+        Debug.Log($"ìŠ¤í‚¬ ì²´ë ¥ ë³´ë„ˆìŠ¤ ì„¤ì •: +{bonus} (í˜„ì¬: {currentHealth:F0}/{FinalHealthWithSkills:F0})");
+    }
+
+    public void SetSkillMoveSpeedBonus(float bonus)
+    {
+        skillMoveSpeedBonus = bonus;
+
+        // ThirdPersonController ì´ë™ì†ë„ ì—…ë°ì´íŠ¸
+        var controller = GetComponent<ThirdPersonController>();
+        if (controller != null)
+        {
+            controller.MoveSpeed = FinalMoveSpeedWithSkills;
+            controller.SprintSpeed = FinalMoveSpeedWithSkills * 1.8f;
+        }
+
+        Debug.Log($"ìŠ¤í‚¬ ì´ë™ì†ë„ ë³´ë„ˆìŠ¤ ì„¤ì •: +{bonus}");
+    }
+
+    // ëª¨ë“  ìŠ¤í‚¬ ë³´ë„ˆìŠ¤ ë¦¬ì…‹
+    public void ResetAllSkillBonuses()
+    {
+        SetSkillAttackPowerBonus(0f);
+        SetSkillHealthBonus(0f);
+        SetSkillMoveSpeedBonus(0f);
+
+        Debug.Log("ëª¨ë“  ìŠ¤í‚¬ ë³´ë„ˆìŠ¤ê°€ ë¦¬ì…‹ë˜ì—ˆìŠµë‹ˆë‹¤");
+    }
+
+    // ìŠ¤íƒ¯ ì—…ê·¸ë ˆì´ë“œ
     public bool UpgradeStat(StatUpgradeType statType)
     {
         if (availablePoints <= 0) return false;
@@ -111,30 +184,30 @@ public class PlayerStats : MonoBehaviour
         return true;
     }
 
-    // ½ºÅÈ º¯°æ Áï½Ã Àû¿ë
+    // ìŠ¤íƒ¯ ë³€ê²½ ì ì‹œ ì ìš©
     private void ApplyStatChanges()
     {
-        // Ã¼·Â ºñÀ² À¯ÁöÇÏ¸ç ÃÖ´ëÃ¼·Â ¾÷µ¥ÀÌÆ®
+        // ì²´ë ¥ ë¹„ìœ¨ ìœ ì§€í•˜ë©´ì„œ ìµœëŒ€ì²´ë ¥ ì—…ë°ì´íŠ¸
         float healthRatio = currentHealth / (baseHealth + ((constitutionLevel - 1) * 20f));
-        float newMaxHealth = FinalHealth;
+        float newMaxHealth = FinalHealthWithSkills;
         currentHealth = newMaxHealth * healthRatio;
 
-        // ÀÌµ¿¼Óµµ ½Ç½Ã°£ Àû¿ë
+        // ì´ë™ì†ë„ ì‹¤ì‹œê°„ ì ìš©
         var controller = GetComponent<ThirdPersonController>();
         if (controller != null)
         {
-            controller.MoveSpeed = FinalMoveSpeed;
-            controller.SprintSpeed = FinalMoveSpeed * 1.8f;
+            controller.MoveSpeed = FinalMoveSpeedWithSkills;
+            controller.SprintSpeed = FinalMoveSpeedWithSkills * 1.8f;
         }
 
         OnHealthChanged?.Invoke(currentHealth, newMaxHealth);
     }
 
-    // µ¥¹ÌÁö ¹Ş±â (±âÁ¸ ½Ã½ºÅÛ°ú ¿¬µ¿)
+    // ë°ë¯¸ì§€ ë°›ê¸° (ê¸°ì¡´ ì‹œìŠ¤í…œê³¼ ì—°ë™)
     public void TakeDamage(float damage)
     {
         currentHealth = Mathf.Max(0, currentHealth - damage);
-        OnHealthChanged?.Invoke(currentHealth, FinalHealth);
+        OnHealthChanged?.Invoke(currentHealth, FinalHealthWithSkills);
 
         if (currentHealth <= 0)
         {
@@ -142,20 +215,23 @@ public class PlayerStats : MonoBehaviour
         }
     }
 
-    // Ã¼·Â È¸º¹
+    // ì²´ë ¥ íšŒë³µ
     public void Heal(float amount)
     {
-        currentHealth = Mathf.Min(FinalHealth, currentHealth + amount);
-        OnHealthChanged?.Invoke(currentHealth, FinalHealth);
+        currentHealth = Mathf.Min(FinalHealthWithSkills, currentHealth + amount);
+        OnHealthChanged?.Invoke(currentHealth, FinalHealthWithSkills);
     }
 
-    // Å©¸®Æ¼ÄÃ È÷Æ® °è»ê
+    // í¬ë¦¬í‹°ì»¬ íˆíŠ¸ ê³„ì‚°
     public float CalculateDamage(float baseDamage)
     {
         bool isCritical = UnityEngine.Random.value < FinalCriticalChance;
         float finalDamage = isCritical ? baseDamage * FinalCriticalDamage : baseDamage;
 
-        // Èû ½ºÅÈ º¸³Ê½º Àû¿ë
+        // ìŠ¤í‚¬ ê³µê²©ë ¥ ë³´ë„ˆìŠ¤ ì¶”ê°€
+        finalDamage += skillAttackPowerBonus;
+
+        // í˜ ìŠ¤íƒ¯ ë³´ë„ˆìŠ¤ ì ìš©
         finalDamage += strengthLevel * 2f;
 
         return finalDamage;
@@ -163,8 +239,8 @@ public class PlayerStats : MonoBehaviour
 
     private void Die()
     {
-        Debug.Log("ÇÃ·¹ÀÌ¾î »ç¸Á!");
-        // »ç¸Á Ã³¸® ·ÎÁ÷
+        Debug.Log("í”Œë ˆì´ì–´ ì‚¬ë§!");
+        // ì‚¬ë§ ì²˜ë¦¬ ë¡œì§
     }
 
     private void NotifyStatsChanged()
@@ -172,7 +248,7 @@ public class PlayerStats : MonoBehaviour
         OnStatsChanged?.Invoke();
     }
 
-    // ½ºÅÈ ¸®¼Â
+    // ìŠ¤íƒ¯ ë¦¬ì…‹
     public void ResetStats()
     {
         availablePoints += strengthLevel + dexterityLevel + focusLevel + constitutionLevel + resistanceLevel;
@@ -182,32 +258,43 @@ public class PlayerStats : MonoBehaviour
         NotifyStatsChanged();
     }
 
-    // µğ¹ö±×¿ë Á¤º¸ Ç¥½Ã
+    // ë””ë²„ê·¸ìš© ì •ë³´ í‘œì‹œ
     private void OnGUI()
     {
         if (!Application.isPlaying) return;
 
-        GUILayout.BeginArea(new Rect(10, 10, 300, 200));
-        GUILayout.Label($"=== ÇÃ·¹ÀÌ¾î ½ºÅÈ ===");
-        GUILayout.Label($"Ã¼·Â: {currentHealth:F0}/{FinalHealth:F0}");
-        GUILayout.Label($"°ø°İ·Â: {FinalAttackPower:F1}");
-        GUILayout.Label($"Å©¸®Æ¼ÄÃ: {FinalCriticalChance * 100:F1}%");
-        GUILayout.Label($"°üÅë·ü: {PierceChance * 100:F1}%");
-        GUILayout.Label($"ÀÌµ¿¼Óµµ: {FinalMoveSpeed:F1}");
+        GUILayout.BeginArea(new Rect(10, 10, 300, 280));
+        GUILayout.Label($"=== í”Œë ˆì´ì–´ ìŠ¤íƒ¯ ===");
+        GUILayout.Label($"ì²´ë ¥: {currentHealth:F0}/{FinalHealthWithSkills:F0}");
+        GUILayout.Label($"ê³µê²©ë ¥: {FinalAttackPowerWithSkills:F1} (+{skillAttackPowerBonus:F1})");
+        GUILayout.Label($"í¬ë¦¬í‹°ì»¬: {FinalCriticalChance * 100:F1}%");
+        GUILayout.Label($"ê´€í†µ: {pierceCount}íšŒ");
+        GUILayout.Label($"ì´ë™ì†ë„: {FinalMoveSpeedWithSkills:F1}");
         GUILayout.Space(10);
-        GUILayout.Label($"»ç¿ë°¡´É Æ÷ÀÎÆ®: {availablePoints}");
+        GUILayout.Label($"=== í™”ì‚´ íŠ¹ì„± ===");
+        GUILayout.Label($"í­ë°œ í™”ì‚´: {(hasExplosiveArrow ? "í™œì„±" : "ë¹„í™œì„±")}");
+        GUILayout.Label($"ìœ ë„ í™”ì‚´: {(hasGuidedAfterPierce ? "í™œì„±" : "ë¹„í™œì„±")}");
+        if (hasExplosiveArrow)
+        {
+            GUILayout.Label($"í­ë°œ ë°˜ê²½: {explosiveRadius:F1}m");
+            GUILayout.Label($"í­ë°œ ë°ë¯¸ì§€: {explosiveDamage * 100:F0}%");
+        }
+        GUILayout.Space(10);
+        GUILayout.Label($"ì‚¬ìš©ê°€ëŠ¥ í¬ì¸íŠ¸: {availablePoints}");
         GUILayout.Label($"STR: {strengthLevel} | DEX: {dexterityLevel}");
         GUILayout.Label($"FOC: {focusLevel} | CON: {constitutionLevel}");
         GUILayout.Label($"RES: {resistanceLevel}");
+        GUILayout.Space(5);
+        GUILayout.Label("F1 - ìŠ¤í‚¬ ìƒíƒœ í™•ì¸");
         GUILayout.EndArea();
     }
 }
 
 public enum StatUpgradeType
 {
-    Strength,      // ±Ù·Â
-    Dexterity,     // ±â¹ÎÇÔ  
-    Focus,         // ÁıÁß
-    Constitution,  // Ã¼·Â
-    Resistance     // ÀúÇ×
+    Strength,      // ê·¼ë ¥
+    Dexterity,     // ê¸°ë¯¼í•¨  
+    Focus,         // ì§‘ì¤‘
+    Constitution,  // ì²´ë ¥
+    Resistance     // ì €í•­
 }

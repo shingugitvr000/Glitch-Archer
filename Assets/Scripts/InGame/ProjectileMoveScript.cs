@@ -30,6 +30,7 @@ public class ProjectileMoveScript : MonoBehaviour
     private PlayerStats playerStats; // 플레이어 스탯 참조
     private Rigidbody bulletRigidbody;
     private Vector3 previousPosition; // 이전 프레임 위치
+    private Vector3 startPosition;    // 발사 시작 위치 (거리 계산용)
 
     // 관통 및 유도 관련 변수 추가
     private int remainingPierceCount = 0;  // 남은 관통 횟수
@@ -72,6 +73,9 @@ public class ProjectileMoveScript : MonoBehaviour
 
     private void Start()
     {
+        // 시작 위치 저장 (거리 계산용)
+        startPosition = transform.position;
+
         // 원래 진행 방향 저장
         originalDirection = transform.forward;
         previousPosition = transform.position; // 초기 위치 저장
@@ -109,6 +113,32 @@ public class ProjectileMoveScript : MonoBehaviour
         // 이펙트 재생
         PlayMuzzleEffect();
         PlayShotSound();
+    }
+
+    // ★ 거리에 따른 데미지 계산 - PlayerStats에서 설정 가져오기
+    private float CalculateDistanceDamage(Vector3 hitPosition)
+    {
+        if (!isPlayerBullet || playerStats == null || !playerStats.hasDistanceDamage)
+            return damage;
+
+        // 발사 시작점부터 히트 지점까지의 거리 계산
+        float distance = Vector3.Distance(startPosition, hitPosition);
+
+        // PlayerStats에서 설정 가져오기
+        float multiplier = playerStats.distanceDamageMultiplier;
+        float maxBonus = playerStats.maxDistanceBonus;
+
+        // 거리 보너스 계산 (PlayerStats 설정 사용)
+        float distanceBonus = 1f + (distance * multiplier * 0.1f);
+
+        // 최대 보너스 제한 (PlayerStats 설정 사용)
+        distanceBonus = Mathf.Min(distanceBonus, maxBonus);
+
+        float finalDamage = damage * distanceBonus;
+
+        Debug.Log($"🎯 거리 데미지: {distance:F1}m - {damage} → {finalDamage:F1} ({distanceBonus:F2}배)");
+
+        return finalDamage;
     }
 
     // ★ 플레이어 화살 발사 (한조 스타일 - 조준방향 + 선택적 상향각 + 중력)
@@ -246,14 +276,17 @@ public class ProjectileMoveScript : MonoBehaviour
             var enemyController = other.GetComponent<EnemyController>();
             if (enemyController != null)
             {
+                // ★ 거리에 따른 기본 데미지 계산 (PlayerStats 설정 사용)
+                float baseDamage = CalculateDistanceDamage(hitPoint);
+
                 // 크리티컬 확인
                 bool isCritical = playerStats != null && playerStats.ShouldCritical();
-                float finalDamage = damage;
+                float finalDamage = baseDamage;
 
                 if (isCritical)
                 {
                     finalDamage *= playerStats.criticalMultiplier;
-                    Debug.Log($"💥 크리티컬 히트! {damage} → {finalDamage} 데미지");
+                    Debug.Log($"💥 크리티컬 히트! {baseDamage:F1} → {finalDamage:F1} 데미지");
                 }
 
                 // ★ 적에게 데미지와 정보 전달만 (데미지 넘버 표시는 적이 담당)
@@ -269,7 +302,7 @@ public class ProjectileMoveScript : MonoBehaviour
                 if (remainingPierceCount > 0)
                 {
                     remainingPierceCount--;
-                    Debug.Log($"관통 공격! 데미지: {finalDamage} - 남은 관통: {remainingPierceCount}");
+                    Debug.Log($"관통 공격! 데미지: {finalDamage:F1} - 남은 관통: {remainingPierceCount}");
 
                     // 관통 후 유도 활성화 체크
                     if (playerStats != null && playerStats.hasGuidedAfterPierce && !isGuided)
@@ -285,7 +318,7 @@ public class ProjectileMoveScript : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log($"일반 공격! 데미지: {finalDamage} - 화살 파괴");
+                    Debug.Log($"일반 공격! 데미지: {finalDamage:F1} - 화살 파괴");
                     // 이펙트 재생
                     PlayHitEffectAt(hitPoint);
                     PlayHitSound();
@@ -396,7 +429,7 @@ public class ProjectileMoveScript : MonoBehaviour
                 var enemyController = hit.GetComponent<EnemyController>();
                 if (enemyController != null && enemyController.currentHealth > 0)
                 {
-                    // 폭발 데미지 계산
+                    // 폭발 데미지 계산 (거리 보너스 없음)
                     float explosionDamage = damage * playerStats.explosiveDamage;
 
                     // ★ 폭발 데미지도 적이 처리하도록 전달 (isExplosion = true)
@@ -481,6 +514,25 @@ public class ProjectileMoveScript : MonoBehaviour
         {
             // 유도 모드일 때는 청록색, 일반일 때는 초록색
             Gizmos.color = isGuided ? Color.cyan : Color.green;
+
+            // 거리 데미지 활성화 상태 표시
+            if (playerStats != null && playerStats.hasDistanceDamage && Application.isPlaying)
+            {
+                // 발사점에서 현재 위치까지의 선 (노란색)
+                Gizmos.color = Color.yellow;
+                if (startPosition != Vector3.zero)
+                    Gizmos.DrawLine(startPosition, transform.position);
+
+                // 거리 표시
+                float distance = Vector3.Distance(startPosition, transform.position);
+                float bonus = 1f + (distance * playerStats.distanceDamageMultiplier * 0.1f);
+                bonus = Mathf.Min(bonus, playerStats.maxDistanceBonus);
+
+                // 기즈모로 거리 정보 표시를 위한 추가 라인
+                Gizmos.color = Color.red;
+                float lineLength = bonus * 2f; // 보너스에 비례한 길이
+                Gizmos.DrawLine(transform.position, transform.position + Vector3.up * lineLength);
+            }
         }
         else
         {
@@ -500,7 +552,7 @@ public class ProjectileMoveScript : MonoBehaviour
         // 유도 모드일 때 타겟과의 연결선 표시
         if (isGuided && guidedTarget != null)
         {
-            Gizmos.color = Color.yellow;
+            Gizmos.color = Color.cyan;
             Gizmos.DrawLine(transform.position, guidedTarget.position);
         }
 

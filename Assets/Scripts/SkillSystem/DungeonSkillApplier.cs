@@ -144,9 +144,10 @@ public class DungeonSkillApplier : MonoBehaviour
 
             case 33: // 폭발 마스터
                 playerStats.hasExplosiveArrow = true;
-                playerStats.explosiveRadius *= 1.5f;
-                playerStats.explosiveDamage *= 1.3f;
-                Debug.Log($"폭발 마스터 Lv.{level}: 폭발 강화");
+                // ★ 기본값에서 마스터 효과 적용 (기존 값에 곱하지 말고 새로 설정)
+                playerStats.explosiveRadius = 5f * 1.5f; // 7.5f
+                playerStats.explosiveDamage = 0.7f * 1.3f; // 0.91f
+                Debug.Log($"폭발 마스터 Lv.{level}: 폭발 반경 {playerStats.explosiveRadius}, 데미지 {playerStats.explosiveDamage * 100f}%");
                 break;
 
             default:
@@ -226,14 +227,23 @@ public class DungeonSkillApplier : MonoBehaviour
         // ★ 던전에서 변경된 스킬 상태가 있다면 저장 (현재는 던전에서 스킬 변경 불가하므로 생략 가능)
         // SaveCurrentSkillState();
 
-        // 커서 잠금 해제
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        // ★ CursorLockManager를 통해 안전하게 커서 해제
+        var cursorManager = FindObjectOfType<CursorLockManager>();
+        if (cursorManager != null)
+        {
+            cursorManager.UnlockCursor();
+        }
+        else
+        {
+            // CursorLockManager가 없으면 기존 방식
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
 
         // 시간 스케일 정상화
         Time.timeScale = 1f;
 
         // 로비 씬 로드 (씬 이름은 실제 로비 씬 이름으로 변경)
-        UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby_Scene");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("LobbyScene");
     }
 }

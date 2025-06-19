@@ -150,10 +150,11 @@ public class SkillPersistenceManager : MonoBehaviour
 
                 case SkillEffectType.ExplosiveArrow:
                     playerStats.hasExplosiveArrow = true;
-                    if (value > 1f) // 마스터 레벨이면 강화
+                    if (value > 1f) // 마스터 레벨이면 강화 (value가 2라면)
                     {
-                        playerStats.explosiveRadius *= 1.5f;
-                        playerStats.explosiveDamage *= 1.3f;
+                        // ★ 기본값에서 마스터 효과 적용 (곱하지 말고 직접 설정)
+                        playerStats.explosiveRadius = 5f * 1.5f; // 7.5f
+                        playerStats.explosiveDamage = 0.7f * 1.3f; // 0.91f
                         Debug.Log("폭발 마스터 효과 적용!");
                     }
                     Debug.Log($"폭발 화살 활성화 (반경: {playerStats.explosiveRadius})");

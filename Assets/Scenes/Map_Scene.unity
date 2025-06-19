@@ -8323,7 +8323,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 540490951}
-  - component: {fileID: 540490950}
   m_Layer: 0
   m_Name: 'DungeonSkillApplier '
   m_TagString: Untagged
@@ -8331,21 +8330,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &540490950
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 540490949}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4693b4482c45c4d47b1619bfcee9f7ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerStats: {fileID: 1848816233}
-  showDebugInfo: 1
-  useSimpleApply: 1
 --- !u!4 &540490951
 Transform:
   m_ObjectHideFlags: 0
@@ -26204,6 +26188,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1848816237}
+    - targetCorrespondingSourceObject: {fileID: 4416926081852918481, guid: 64dce48905ffd9b4293e595fa6941544,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1848816238}
   m_SourcePrefab: {fileID: 100100000, guid: 64dce48905ffd9b4293e595fa6941544, type: 3}
 --- !u!114 &1848816222 stripped
 MonoBehaviour:
@@ -26313,7 +26301,7 @@ MonoBehaviour:
   pierceCount: 2
   hasGuidedAfterPierce: 1
   guidedRange: 15
-  hasExplosiveArrow: 0
+  hasExplosiveArrow: 1
   explosiveRadius: 5
   explosiveDamage: 0.7
   criticalChance: 0.15
@@ -26333,6 +26321,21 @@ MonoBehaviour:
   availablePoints: 10
   playerLevel: 15
   allSkills: []
+--- !u!114 &1848816238
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1079232547}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4693b4482c45c4d47b1619bfcee9f7ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerStats: {fileID: 1848816233}
+  showDebugInfo: 1
+  useSimpleApply: 1
 --- !u!1 &1855381529 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7220124231782820268, guid: 824ac94b09deb834f916f957a7fca4ee,
